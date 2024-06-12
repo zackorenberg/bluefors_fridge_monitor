@@ -1,0 +1,11 @@
+*.log
+*.config
+testEmails
+testEmails/*
+deprecatedCode
+deprecatedCode/*
+config
+__pycache__
+__pycache__/*
+.idea
+.idea/*

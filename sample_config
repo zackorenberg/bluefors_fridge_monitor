@@ -1,0 +1,4 @@
+LOG_PATH=C:\Path\To\Log\Folder
+SENDER=email@address.com
+PASSWORD=emailpassword
+RECIPIENTS=recipient@email.com
