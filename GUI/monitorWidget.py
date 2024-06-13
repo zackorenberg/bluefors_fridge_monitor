@@ -24,13 +24,15 @@ class MonitorWidgetSelect(QtWidgets.QWidget):
         cb_width = self.monitor_checkbox.sizeHint().width()
         self.monitor_checkbox.setFixedWidth(cb_width)
         self.monitor_checkbox.currentTextChanged.connect(self.monitorTypeChanged)
-
+        #self.monitor_checkbox.setStyleSheet("padding: 0")
         self.main_layout.addWidget(self.monitor_checkbox, 0, 0, QtCore.Qt.AlignLeft)
 
         #self.main_layout.addWidget(self.monitor_checkbox, 0, QtCore.Qt.AlignLeft)
         #self.main_layout.addWidget(self.value_widget)
 
-        self.setContentsMargins(0,0,0,0)
+        #self.setContentsMargins(0,0,0,0)
+        self.main_layout.setContentsMargins(0,0,0,0)
+        #self.setStyleSheet("padding: 0")
 
         self.variables_type = {}
         self.variables_text = {}
@@ -56,6 +58,8 @@ class MonitorWidgetSelect(QtWidgets.QWidget):
                 #self.main_layout.addWidget(QtWidgets.QLabel(varname), 0, col)
                 self.main_layout.addWidget(self.variables_text[varname], 0, col)
                 col += 1
+        #self.main_layout.update()
+        #self.adjustSize()
         self.uiChanged.emit()
 
     def monitorStatusChangeCallback(self, status):
@@ -89,7 +93,12 @@ class MonitorWidgetSelect(QtWidgets.QWidget):
         self.updateGeometry()
         return self.main_layout.totalSizeHint()
         return self.main_layout.sizeHint()
+    """
+    def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+        super().resizeEvent(a0)
 
+        self.adjustSize()
+    """
 
 
 
@@ -123,9 +132,11 @@ class MonitorWidget(QtWidgets.QWidget):
         self.mainLayout.addWidget(self.monitor_type, 0, QtCore.Qt.AlignLeft)
 
         self.mainLayout.addSpacerItem(QtWidgets.QSpacerItem(0, 0, Qt.QSizePolicy.Expanding, Qt.QSizePolicy.Expanding))
+        self.mainLayout.setContentsMargins(0,0,0,0)
         #self.mainLayout.setStretch(4, Qt.QSizePolicy.Expanding)
 
         self.setLayout(self.mainLayout)
+        self.adjustSize()
 
         self.checkbox.stateChanged.connect(self.onCheckBoxToggle)
 
@@ -153,11 +164,13 @@ class MonitorWidget(QtWidgets.QWidget):
         #    logging.error("No parent signal detected, monitor will not do anything")
 
     def changeValue(self, time, value):
-        if time and value:
-            dt = datetime.fromtimestamp(time)
-            time_str = dt.strftime(f"{localvars.DATE_FORMAT}, {localvars.TIME_FORMAT}:")
-            self.monitor_change.setText(str(time_str))
-            self.monitor_value.setText(self.parse_function(value))
+        if time is None or value is None:
+            logging.warning(f'Invalid time or value for channel {self.channel + (":"+self.subchannel if self.subchannel else "")}: {time}, {value}')
+
+        dt = datetime.fromtimestamp(time)
+        time_str = dt.strftime(f"{localvars.DATE_FORMAT}, {localvars.TIME_FORMAT}:")
+        self.monitor_change.setText(str(time_str))
+        self.monitor_value.setText(self.parse_function(value))
         self.resetSize()
 
     def resetSize(self):
@@ -171,6 +184,7 @@ class MonitorWidget(QtWidgets.QWidget):
         #self.monitor_value.setText(self.monitor_value.text())
         #self.parent.main_layout.addStretch()
         self.resetSize()
+        self.adjustSize()
 
 if __name__ == "__main__":
     import sys

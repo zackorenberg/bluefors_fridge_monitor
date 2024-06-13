@@ -7,7 +7,9 @@ SENDER = None
 PASSWORD = None
 
 # TODO: turn this into a class so can be dynamically changed with gui
-with open(CONFIG_FILE, 'r') as f:
+import os
+dir = os.path.dirname(__file__)
+with open(os.path.join(dir, CONFIG_FILE), 'r') as f:
     lines = f.readlines()
     # Set LOG_PATH
     try:
@@ -42,7 +44,7 @@ TIME_FORMAT = "%H:%M:%S"
 
 THERMOMETRY_CHANNELS = [f'CH{d+1} T' for d in range(7)] + [f'CH{d+1} R' for d in range(7)] +[f'CH{d+1} P' for d in range(7)]
 VALVE_CHANNELS = ['Flowmeter', 'maxigauge', 'Channels']
-STATUS_CHANNELS = ['Status']
+STATUS_CHANNELS = ['Status', 'heaters']
 
 MONITOR_CHANNELS = {
     'Thermometry':THERMOMETRY_CHANNELS,
@@ -55,6 +57,7 @@ TABULATE_TABLE_FMT = 'fancy_grid'  # See here for options: https://pypi.org/proj
 INDENT_EMAIL_INFORMATION = True
 
 MAXIMUM_DATAPOINT_HISTORY = 300
+MAX_COLLAPSEABLE_HEIGHT = 400
 
 
 CHANGE_PROCESS_CHECK = 1 # Number of seconds between checking for changes (We do this instead of immediate processing because many files sometimes get modified concurrently and we want as accurate a result as possible when a monitor goes off

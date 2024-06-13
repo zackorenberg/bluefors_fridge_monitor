@@ -67,6 +67,10 @@ def kv_channel(date_str, time_str, keys=['one', 'two', 'three', 'four']):
 def channel_channel(date_str, time_str, keys=['one', 'two', 'three']):
     return [date_str, time_str, 1] + sum([[k, random.random()*10] for k in keys],[])
 
+
+def very_large_channel(date_str, time_str):
+    s = "abcdefghijklmnopqrstuvwxyz"
+    return kv_channel(date_str, time_str, keys=[c for c in s])
 LOG_PATH = 'test_logs'
 logging_threads = []
 #logging_threads.append(threading.Thread(target=generate_logs, args=('CH1 T',LOG_PATH,single_channel)))
@@ -76,6 +80,7 @@ logging_threads.append(threading.Thread(target=generate_multiple_logs, args=(['C
 logging_threads.append(threading.Thread(target=generate_logs, args=('Flowmeter',LOG_PATH,single_channel)))
 logging_threads.append(threading.Thread(target=generate_logs, args=('Channels',LOG_PATH,channel_channel)))
 logging_threads.append(threading.Thread(target=generate_logs, args=('Status',LOG_PATH,kv_channel)))
+logging_threads.append(threading.Thread(target=generate_logs, args=('heaters',LOG_PATH,very_large_channel)))
 
 for thread in logging_threads:
     thread.daemon = True

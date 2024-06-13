@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets, Qt
+from PyQt5 import QtCore, QtWidgets, Qt, QtGui
 
 from localvars import *
 from mailer import Mailer
@@ -13,6 +13,7 @@ import traceback
 
 class BlueforsMonitor(QtWidgets.QWidget):
     monitorSignal = QtCore.pyqtSignal(dict)
+    widgetResize = QtCore.pyqtSignal()
     def __init__(self, log_path = LOG_PATH):
         super().__init__()
         self.fileManager = FileManager(log_path)
@@ -26,6 +27,20 @@ class BlueforsMonitor(QtWidgets.QWidget):
         self.allMonitors = {}
 
 
+        """
+        self.scroll_widget = QtWidgets.QScrollArea()
+        self.scroll_widget.setWidgetResizable(True)
+        self.scroll_widget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        #self.scroll_layout = QtWidgets.QLayout()
+        #self.scroll_layout.addWidget(self.main_widget)
+        #self.setLayout(self.scroll_layout)
+        self.setMaximumSize(400, 800)
+        self.scroll_widget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.scroll_widget.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.scroll_layout = QtWidgets.QVBoxLayout()
+        self.scroll_layout.addWidget(self.scroll_widget)
+        self.setLayout(self.scroll_layout)
+        """
     def init_ui(self):
 
         justify = 0
@@ -41,7 +56,8 @@ class BlueforsMonitor(QtWidgets.QWidget):
 
         for ch_type, channels in MONITOR_CHANNELS.items():
             self.collapsableBoxes[ch_type] = CollapsibleBox(ch_type)
-
+            self.collapsableBoxes[ch_type].collapseChangeState.connect(self.collapsibleWidgetCallback)
+            self.collapsableBoxes[ch_type].collapseChangeState.connect(self.widgetResize)
             layout = QtWidgets.QVBoxLayout()
             for channel in channels:
                 self.allMonitors[channel] = {} # Can be overwritten
@@ -82,6 +98,8 @@ class BlueforsMonitor(QtWidgets.QWidget):
             self.main_layout.addWidget(cb_widget)
         self.main_layout.addStretch()
         self.setLayout(self.main_layout)
+        #self.scroll_widget.setMinimumSize(self.main_layout.sizeHint())
+        #self.scroll_widget.setLayout(self.main_layout)
 
     def init_threads(self):
         self.fileManager.start()
@@ -106,24 +124,28 @@ class BlueforsMonitor(QtWidgets.QWidget):
                             if subchannel not in self.allMonitors[channel]:
                                 logging.error(f"Invalid subchannel found: {channel}:{subchannel}")
                                 continue
-                            self.allMonitors[channel][subchannel].changeValue(time, value)
+                            try:
+                                self.allMonitors[channel][subchannel].changeValue(time, value)
+                            except Exception as e:
+                                logging.error(f"Could not change value of {channel}:{subchannel} to {value} at {time}: {str(e)}")
                     else:
-                        self.allMonitors[channel].changeValue(time, values)
+                        try:
+                            self.allMonitors[channel].changeValue(time, values)
+                        except Exception as e:
+                            logging.error(f"Could not change value of {channel} to {value} at {time}: {str(e)}")
+
         except Exception as e:
             logging.error(f"While processing changes: {str(e)}")
-            traceback.format_exc()
+            logging.error(f"Traceback: {traceback.format_exc()}")
         try:
             self.checkMonitors(obj)
         except Exception as e:
             logging.error(f"While checking monitors: {str(e)}")
-            print(traceback.format_exc())
-            #raise e
+            logging.error(f"Traceback: {traceback.format_exc()}")
 
     def checkMonitors(self, obj):
         vals = self.monitorManager.checkMonitors(obj)
-
         triggered = (self.monitorManager.WhatMonitorsTriggered(vals))
-        #print(vals)
         triggered_data = self.monitorManager.triggeredMonitorInfo(obj, triggered)
         if len(vals.items()) and len(triggered):
             logging.warning(f"Alerts triggered: {', '.join([':'.join(x) if type(x) != str else x for x in triggered])}")
@@ -149,16 +171,36 @@ class BlueforsMonitor(QtWidgets.QWidget):
             self.monitorManager.removeMonitor(channel=obj['channel'], subchannel=obj['subchannel'])
             logging.info(f"Monitor {obj['monitor']} deactivated, (channel={obj['channel']}, subchannel={obj['subchannel']}, type={obj['type']}, values={obj['values']}, variables={obj['variables']})")
 
-
+    def collapsibleWidgetCallback(self):
+        """
+        Occurs when collapsibleBox collapses or expands.
+        Reset geometry so theres no extra stuff
+        """
+        self.updateGeometry()
+        self.resize(self.main_layout.sizeHint())
+        self.adjustSize()
 if __name__ == "__main__":
     import sys
     import random
     MONITOR_CHANNELS['Thermometry'] = ['CH1 P', 'CH1 R', 'CH1 T']
     MONITOR_CHANNELS['Valve'] = ['Channels', 'Flowmeter']
     app = QtWidgets.QApplication(sys.argv)
+    w = QtWidgets.QMainWindow()
+    w.setWindowTitle("Bluefors Fridge Monitor")
+    dock_widget = QtWidgets.QDockWidget('Monitors')
+    dock_widget.setFeatures(QtWidgets.QDockWidget.DockWidgetFloatable |
+                 QtWidgets.QDockWidget.DockWidgetMovable)
     bm = BlueforsMonitor('tests/test_logs')
+
+    dock_widget.setWidget(bm)
+    dock_widget.setContentsMargins(0,0,0,0)
+    bm.widgetResize.connect(dock_widget.adjustSize)
+    #dock_widget.resizeEvent = lambda x: w.adjustSize()
+    w.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock_widget)
+    #dock_widget.show()
     bm.init_ui()
     bm.init_threads()
-    bm.show()
+    #bm.show()
+    w.show()
     sys.exit(app.exec_())
 

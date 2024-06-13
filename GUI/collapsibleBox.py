@@ -1,8 +1,12 @@
 # Copy pasted from https://stackoverflow.com/questions/52615115/how-to-create-collapsible-box-in-pyqt
+# Maybe I want to make it with tables? https://stackoverflow.com/questions/54385437/how-can-i-make-a-table-that-can-collapse-its-rows-into-categories-in-qt
+
 from PyQt5 import QtCore, QtGui, QtWidgets
+from localvars import *
 
 ANIMATION_DURATION = 50 #500
 class CollapsibleBox(QtWidgets.QWidget):
+    collapseChangeState = QtCore.pyqtSignal()
     def __init__(self, title="", parent=None):
         super(CollapsibleBox, self).__init__(parent)
 
@@ -17,14 +21,19 @@ class CollapsibleBox(QtWidgets.QWidget):
         self.toggle_button.pressed.connect(self.on_pressed)
 
         self.toggle_animation = QtCore.QParallelAnimationGroup(self)
-
+        self.toggle_animation.finished.connect(self.on_animation_complete)
         self.content_area = QtWidgets.QScrollArea(
             maximumHeight=0, minimumHeight=0
         )
         self.content_area.setSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed
         )
-        self.content_area.setFrameShape(QtWidgets.QFrame.NoFrame)
+
+        self.content_area.setWidgetResizable(True)
+        self.content_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        #self.content_area.setWidget(QtWidgets.QWidget())
+        #self.content_area.setHorizontalScrollBar()
+        #self.content_area.setFrameShape(QtWidgets.QFrame.NoFrame)
 
         lay = QtWidgets.QVBoxLayout(self)
         lay.setSpacing(0)
@@ -55,14 +64,28 @@ class CollapsibleBox(QtWidgets.QWidget):
         )
         self.toggle_animation.start()
 
+    def on_animation_complete(self):
+        self.collapseChangeState.emit()
+
     def setContentLayout(self, layout):
         lay = self.content_area.layout()
         del lay
-        self.content_area.setLayout(layout)
+        self.content_widget = QtWidgets.QWidget()
+        self.content_widget.setLayout(layout)
+        self.content_area.setWidget(self.content_widget)
+
+
+        #self.content_area.setLayout(layout)
+        self.content_area.setWidgetResizable(True)
+        self.content_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.content_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.content_area.setMinimumWidth(layout.maximumSize().width() + self.content_area.verticalScrollBar().sizeHint().width())
         collapsed_height = (
             self.sizeHint().height() - self.content_area.maximumHeight()
         )
-        content_height = layout.sizeHint().height()
+        content_height = min(MAX_COLLAPSEABLE_HEIGHT, layout.sizeHint().height() + self.content_area.horizontalScrollBar().sizeHint().height())
+        # Can make it scrollable by lowering the content height, but may be better to make parent scrollable instead
+        #print(content_height)
         for i in range(self.toggle_animation.animationCount()):
             animation = self.toggle_animation.animationAt(i)
             animation.setDuration(ANIMATION_DURATION)
