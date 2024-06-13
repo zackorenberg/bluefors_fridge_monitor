@@ -1,5 +1,6 @@
 from valueMonitor import *
-import logging
+import logger
+logging = logger.Logger(__file__)
 
 
 class MonitorManager():

@@ -5,7 +5,8 @@ from datetime import datetime
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-import logging
+import logger
+logging = logger.Logger(__file__)
 
 import time
 

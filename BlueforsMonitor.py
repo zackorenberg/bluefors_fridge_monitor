@@ -7,7 +7,12 @@ from monitorManager import MonitorManager
 
 from GUI.collapsibleBox import CollapsibleBox
 from GUI.monitorWidget import MonitorWidget
-import logging
+
+from GUI.consoleWidget import Printerceptor, ConsoleWidget
+import sys
+sys.stdout = stdout = Printerceptor()
+import logger
+logging = logger.Logger(__file__)
 
 import traceback
 
@@ -167,9 +172,11 @@ class BlueforsMonitor(QtWidgets.QWidget):
         if obj['active']:
             self.monitorManager.addMonitor(channel=obj['channel'], subchannel=obj['subchannel'], type=obj['type'], values=obj['values'], variables=obj['variables'])
             logging.info(f"Monitor {obj['monitor']} activated, (channel={obj['channel']}, subchannel={obj['subchannel']}, type={obj['type']}, values={obj['values']}, variables={obj['variables']})")
+            print(f"Monitor {obj['monitor']} activated")
         else:
             self.monitorManager.removeMonitor(channel=obj['channel'], subchannel=obj['subchannel'])
             logging.info(f"Monitor {obj['monitor']} deactivated, (channel={obj['channel']}, subchannel={obj['subchannel']}, type={obj['type']}, values={obj['values']}, variables={obj['variables']})")
+            print(f"Monitor {obj['monitor']} deactivated")
 
     def collapsibleWidgetCallback(self):
         """
@@ -183,9 +190,8 @@ if __name__ == "__main__":
     import sys
     import random
 
-    from GUI.consoleWidget import Printerceptor, ConsoleWidget
-    stdout = Printerceptor()
-    logging.basicConfig(stream=stdout)
+
+    logging.setLevel(logging.DEBUG)
     MONITOR_CHANNELS['Thermometry'] = ['CH1 P', 'CH1 R', 'CH1 T']
     MONITOR_CHANNELS['Valve'] = ['Channels', 'Flowmeter']
     app = QtWidgets.QApplication(sys.argv)

@@ -2,7 +2,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets, Qt
 from datetime import datetime
 import localvars
 import time
-import logging
+import logger
+logging = logger.Logger(__file__)
 
 from valueMonitor import *
 

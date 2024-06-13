@@ -3,7 +3,8 @@
 from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
-import logging
+import logger
+logging = logger.Logger(__file__)
 from localvars import *
 from tabulate import tabulate
 
