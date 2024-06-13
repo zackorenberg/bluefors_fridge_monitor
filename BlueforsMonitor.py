@@ -182,6 +182,10 @@ class BlueforsMonitor(QtWidgets.QWidget):
 if __name__ == "__main__":
     import sys
     import random
+
+    from GUI.consoleWidget import Printerceptor, ConsoleWidget
+    stdout = Printerceptor()
+    logging.basicConfig(stream=stdout)
     MONITOR_CHANNELS['Thermometry'] = ['CH1 P', 'CH1 R', 'CH1 T']
     MONITOR_CHANNELS['Valve'] = ['Channels', 'Flowmeter']
     app = QtWidgets.QApplication(sys.argv)
@@ -194,9 +198,20 @@ if __name__ == "__main__":
 
     dock_widget.setWidget(bm)
     dock_widget.setContentsMargins(0,0,0,0)
+    console_dock_widget = QtWidgets.QDockWidget('Console')
+    console_dock_widget.setFeatures(QtWidgets.QDockWidget.DockWidgetFloatable |
+                 QtWidgets.QDockWidget.DockWidgetMovable)
+
+    cw = ConsoleWidget()
+    stdout.printToConsole.connect(cw.printToConsole)
+
+    console_dock_widget.setWidget(cw)
+    console_dock_widget.setContentsMargins(0,0,0,0)
+
     bm.widgetResize.connect(dock_widget.adjustSize)
     #dock_widget.resizeEvent = lambda x: w.adjustSize()
-    w.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock_widget)
+    w.addDockWidget(QtCore.Qt.DockWidgetArea.LeftDockWidgetArea, dock_widget)
+    w.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea, console_dock_widget)
     #dock_widget.show()
     bm.init_ui()
     bm.init_threads()
