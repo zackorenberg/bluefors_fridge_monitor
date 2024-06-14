@@ -8,6 +8,7 @@ from GUI.monitorWidget import MonitorWidget
 
 import sys
 import logger
+import traceback
 
 logging = logger.Logger(__file__)
 
@@ -19,10 +20,10 @@ class MonitorsWidget(QtWidgets.QWidget):
     widgetResize = QtCore.pyqtSignal()
     processedChanges = QtCore.pyqtSignal(dict) # Signals changes from fileManager in parent
     def __init__(self):
-        self.collapsableBox = {}
+        super().__init__()
+        self.collapsableBoxes = {}
         self.allMonitors = {}
-        self.processedChanges.connect(self.processedChangesCallback)
-        self.monitorChange.connect(self.monitorEditCallback)
+        self.processedChanges.connect(self.processChangesCallback)
         self.values = None
 
     def init_ui(self, values):
@@ -65,6 +66,7 @@ class MonitorsWidget(QtWidgets.QWidget):
                             justify=justify[ch_type]
                         )
                         mw.monitorSignal.connect(self.monitorSignal)
+                        self.monitorChange.connect(mw.monitorChange)
                         mw.changeValue(t, v)
                         layout.addWidget(mw)
                         self.allMonitors[channel][subchannel] = mw
@@ -77,6 +79,7 @@ class MonitorsWidget(QtWidgets.QWidget):
                         justify=justify[ch_type]
                     )
                     mw.monitorSignal.connect(self.monitorSignal)
+                    self.monitorChange.connect(mw.monitorChange)
                     mw.changeValue(t, value)
                     layout.addWidget(mw)
                     self.allMonitors[channel] = mw
@@ -88,3 +91,50 @@ class MonitorsWidget(QtWidgets.QWidget):
             self.main_layout.addWidget(cb_widget)
         self.main_layout.addStretch()
         self.setLayout(self.main_layout)
+
+    def processChangesCallback(self, obj):
+        """
+        This occurs when fileManager processes a change
+        :param obj: change object
+        :return: None
+        """
+        if all([all([k is None and v is None for k,v in vals.items()]) for keys, vals in obj.items()]):
+            logging.warning(f"All None object emitted by fileManager: {str(obj)}")
+            return
+        try:
+            for channel, values_object in obj.items():
+                if channel not in self.allMonitors:
+                    logging.error(f"Invalid channel found: {channel}")
+                    continue
+                for time, values in values_object.items():
+                    if type(values) == dict:
+                        for subchannel, value in values.items():
+                            if subchannel not in self.allMonitors[channel]:
+                                logging.error(f"Invalid subchannel found: {channel}:{subchannel}")
+                                continue
+                            try:
+                                self.allMonitors[channel][subchannel].changeValue(time, value)
+                            except Exception as e:
+                                logging.error(f"Could not change value of {channel}:{subchannel} to {value} at {time}: {str(e)}")
+                    else:
+                        if type(self.allMonitors[channel]) == dict:
+                            logging.error(f"Invalid value for channel {channel}: {values}")
+                        else:
+                            try:
+                                self.allMonitors[channel].changeValue(time, values)
+                            except Exception as e:
+                                logging.error(f"Could not change value of {channel} to {values} at {time}: {str(e)}")
+
+        except Exception as e:
+            logging.error(f"While processing changes: {str(e)}")
+            logging.error(f"Traceback: {traceback.format_exc()}")
+
+    def collapsibleWidgetCallback(self):
+        """
+        Occurs when collapsibleBox collapses or expands.
+        Reset geometry so theres no extra stuff
+        """
+        self.updateGeometry()
+        self.resize(self.main_layout.sizeHint())
+        self.adjustSize()
+        self.widgetResize.emit()

@@ -263,6 +263,7 @@ class ActiveMonitorsWidget(QtWidgets.QWidget):
             obj['active'] = False
             self.monitorChange.emit(obj)
 
+
     def editBtnCallback(self, event):
         indexes = self.table_view.selectionModel().selectedRows()
         for index in sorted(indexes, reverse=True):
@@ -274,6 +275,7 @@ class ActiveMonitorsWidget(QtWidgets.QWidget):
             if dialog.exec_() == QtWidgets.QDialog.Accepted:
                 modified_obj = dialog.getModifiedData()
                 self.monitorChange.emit(modified_obj)
+
 
     def on_double_click(self, index):
         monitor = self.table.getMonitor(index)
@@ -288,6 +290,7 @@ class ActiveMonitorsWidget(QtWidgets.QWidget):
             logging.warning(f"Cannot find monitor at double click index {index.row()}, {index.column()}")
         if DEBUG_MODE:
             print(self.exportMonitors())
+
 
     def exportMonitors(self):
         monitors = self.table._monitors
