@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 from localvars import *
 from Core.mailer import Mailer
@@ -11,6 +11,9 @@ from GUI.monitorWidget import MonitorWidget
 from GUI.consoleWidget import Printerceptor, ConsoleWidget
 import sys
 sys.stdout = stdout = Printerceptor()
+if sys.platform == 'win32':
+    import ctypes
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('bluefors.monitor.app.1')
 import logger
 
 logging = logger.Logger(__file__)
@@ -212,6 +215,7 @@ if __name__ == "__main__":
         MONITOR_CHANNELS['Valve'] = ['Channels', 'Flowmeter']
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QMainWindow()
+    w.setWindowIcon(QtGui.QIcon('Resources/BlueforsIcon.ico'))
     w.setWindowTitle("Bluefors Fridge Monitor")
     if DEBUG_MODE:
         w.setWindowTitle("Bluefors Fridge Monitor (DEBUG)")
@@ -294,9 +298,12 @@ if __name__ == "__main__":
                               'name': 'OutRangeMonitor', 'variables': {'minimum': 1.0, 'maximum': 100.0}},
              'Status:one': {'monitor': 'Status:one', 'channel': 'Status', 'subchannel': 'one', 'name': 'EqualStr',
                             'variables': {'value': 'aaaa'}}})
-
+    
     w.show()
-    exitcode = app.exec_()
+    try:
+        exitcode = app.exec_()
+    except KeyboardInterrupt:
+        print("Quitting program")
     exportedMonitors = amw.exportMonitors()
     
     with open('history.monitor', 'w') as f:
