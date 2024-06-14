@@ -45,14 +45,14 @@ TIME_FORMAT = "%H:%M:%S"
 
 THERMOMETRY_CHANNELS = [f'CH{d+1} T' for d in range(7)] + [f'CH{d+1} R' for d in range(7)] +[f'CH{d+1} P' for d in range(7)]
 
-VALVE_CHANNELS = ['Flowmeter', 'Channels']
+VALVE_CHANNELS = ['Channels']
 PRESSURE_CHANNELS = ['Flowmeter', 'maxigauge']
 STATUS_CHANNELS = ['Status', 'Errors']
 HEATER_CHANNELS = ['heaters']
 
 MONITOR_CHANNELS = {
     'Thermometry':THERMOMETRY_CHANNELS,
-    'Valve':VALVE_CHANNELS,
+    'Valves':VALVE_CHANNELS,
     'Pressure and Flow':PRESSURE_CHANNELS,
     'Status':STATUS_CHANNELS,
     'Heaters':HEATER_CHANNELS,
@@ -65,5 +65,6 @@ INDENT_EMAIL_INFORMATION = False
 MAXIMUM_DATAPOINT_HISTORY = 300
 MAX_COLLAPSEABLE_HEIGHT = 400
 
+FIX_CONSOLE_HEIGHT = True
 
 CHANGE_PROCESS_CHECK = 1 # Number of seconds between checking for changes (We do this instead of immediate processing because many files sometimes get modified concurrently and we want as accurate a result as possible when a monitor goes off

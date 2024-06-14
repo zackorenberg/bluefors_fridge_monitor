@@ -104,6 +104,7 @@ class ActiveMonitorEdit(QtWidgets.QWidget):
 class ActiveMonitorsWidget(QtWidgets.QWidget):
     monitorSignal = QtCore.pyqtSignal(dict)
     monitorEdited = QtCore.pyqtSignal(dict)
+    widgetResize = QtCore.pyqtSignal()
     def __init__(self):
         super().__init__()
         self.active_monitors = {}
@@ -115,6 +116,7 @@ class ActiveMonitorsWidget(QtWidgets.QWidget):
         self.table_view.setModel(self.table)
         self.table_view.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.table_view.doubleClicked.connect(self.on_double_click)
+        #self.table_view.setSizeAdjustPolicy(QtWidgets.QTableView.SizeAdjustPolicy.AdjustToContents)
         self.resizeTableSections()
 
         self.edit_btn = QtWidgets.QPushButton('Edit Monitor')
@@ -129,11 +131,43 @@ class ActiveMonitorsWidget(QtWidgets.QWidget):
         self.edit_btn.setEnabled(False)
         self.remove_btn.setEnabled(False)
 
+        #self.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
+
+
     def resizeTableSections(self):
+        """
+        self.table_view.resizeColumnsToContents()
+        ## Try doing more sresizing
+        total_width = self.table_view.verticalHeader().width() + 2  # Add 2 for border
+        for column in range(self.table.columnCount(QtCore.QModelIndex())):
+            total_width += self.table_view.columnWidth(column)
+        """
+        self.table_view.resizeColumnsToContents()# Set a min width
+        total_width = self.table_view.verticalHeader().width() + 20  # Add 2 for border
+        if self.table_view.verticalScrollBar().isVisible():
+            total_width += self.table_view.verticalScrollBar().width()
+        print(total_width)
+        for column in range(self.table.columnCount(QtCore.QModelIndex())):
+            total_width += self.table_view.columnWidth(column)
+        print(total_width, self.table_view.width())
+        self.table_view.setMinimumWidth(total_width)
+        self.table_view.resize(total_width, self.table_view.height())
+        self.table_view.adjustSize()
+
         if self.table.columnCount(QtCore.QModelIndex()) > 0:
             self.table_view.horizontalHeader().setSectionResizeMode(0,
                                                                     QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
             self.table_view.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+
+
+
+        self.adjustSize()
+        self.widgetResize.emit()
+        """
+        self.table_view.resize(max(self.table_view.width(), total_width), self.table_view.height())
+        self.adjustSize()
+        """
+
 
     def monitorSignalCallback(self, obj):
         try:
@@ -163,6 +197,13 @@ class ActiveMonitorsWidget(QtWidgets.QWidget):
         monitor = self.table.getMonitor(index)
         if monitor:
             logging.debug(f"Double clicked monitor {monitor['monitor']}")
+
+    def resizeEventBad(self, a0: QtGui.QResizeEvent) -> None:
+        super().resizeEvent(a0)
+        self.resizeTableSections()
+        #if self.table_view.horizontalScrollBar().isVisible():
+        #    self.resize(self.table_view.width(), self.height())
+
 
 if __name__ == "__main__":
     import sys

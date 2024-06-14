@@ -48,7 +48,7 @@ class BlueforsMonitor(QtWidgets.QWidget):
         """
     def init_ui(self):
 
-        justify = 0
+        justify = {ch_type:0 for ch_type in MONITOR_CHANNELS.keys()}
 
         for ch_type, channels in MONITOR_CHANNELS.items():
             for channel in channels:
@@ -58,9 +58,9 @@ class BlueforsMonitor(QtWidgets.QWidget):
                     logging.error(f"Encountered an error while trying to find last values: {str(e)}")
                     t, value = 0, None
                 if type(value) == dict:
-                    justify = max(justify, max([len(f"{channel}:{ch}") for ch in value.keys()]))
+                    justify[ch_type] = max(justify[ch_type], max([len(f"{channel}:{ch}") for ch in value.keys()]))
                 else:
-                    justify = max(justify, len(channel))
+                    justify[ch_type] = max(justify[ch_type], len(channel))
         #justify += 1
 
         for ch_type, channels in MONITOR_CHANNELS.items():
@@ -85,7 +85,7 @@ class BlueforsMonitor(QtWidgets.QWidget):
                             channel=channel,
                             subchannel=subchannel,
                             parent=self,
-                            justify=justify
+                            justify=justify[ch_type]
                         )
                         mw.monitorSignal.connect(self.monitorSignal)
                         mw.changeValue(t, v)
@@ -97,7 +97,7 @@ class BlueforsMonitor(QtWidgets.QWidget):
                         channel=channel,
                         subchannel=None,
                         parent=self,
-                        justify=justify
+                        justify=justify[ch_type]
                     )
                     mw.monitorSignal.connect(self.monitorSignal)
                     mw.changeValue(t, value)
@@ -220,9 +220,11 @@ if __name__ == "__main__":
 
     dock_widget.setWidget(bm)
     dock_widget.setContentsMargins(0,0,0,0)
+    ############## Console Widget
     console_dock_widget = QtWidgets.QDockWidget('Console')
     console_dock_widget.setFeatures(QtWidgets.QDockWidget.DockWidgetFloatable |
                  QtWidgets.QDockWidget.DockWidgetMovable)
+
 
     cw = ConsoleWidget()
     stdout.printToConsole.connect(cw.printToConsole)
@@ -230,9 +232,17 @@ if __name__ == "__main__":
     console_dock_widget.setWidget(cw)
     console_dock_widget.setContentsMargins(0,0,0,0)
 
+    if FIX_CONSOLE_HEIGHT:
+        size = cw.sizeHint()
+        cw.consoleTextEdit.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        cw.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        console_dock_widget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+
+    ######### Active monitors
     monitors_dock_widget = QtWidgets.QDockWidget('Active Monitors')
     monitors_dock_widget.setFeatures(QtWidgets.QDockWidget.DockWidgetFloatable |
                  QtWidgets.QDockWidget.DockWidgetMovable)
+
     from GUI.activeMonitorsWidget import ActiveMonitorsWidget
     amw = ActiveMonitorsWidget()
 
@@ -243,7 +253,22 @@ if __name__ == "__main__":
     monitors_dock_widget.setContentsMargins(0,0,0,0)
 
     bm.widgetResize.connect(dock_widget.adjustSize)
-    #dock_widget.resizeEvent = lambda x: w.adjustSize()
+
+    def resizeEvent(x):
+        super(type(dock_widget), dock_widget).resizeEvent(x)
+        amw.resize(amw.width(), bm.height())
+        bm.adjustSize()
+        #w.adjustSize()
+    def activeMonitorResizeEvent():
+        dock_widget.adjustSize()
+        bm.adjustSize()
+        monitors_dock_widget.adjustSize()
+        amw.adjustSize()
+        w.adjustSize()
+    dock_widget.resizeEvent = resizeEvent
+
+    amw.widgetResize.connect(activeMonitorResizeEvent)
+
     w.addDockWidget(QtCore.Qt.DockWidgetArea.LeftDockWidgetArea, dock_widget)
     w.addDockWidget(QtCore.Qt.DockWidgetArea.RightDockWidgetArea, monitors_dock_widget)
     w.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea, console_dock_widget)
