@@ -43,6 +43,8 @@ class MonitorWidgetSelect(QtWidgets.QWidget):
 
         self.setLayout(self.main_layout)
 
+        # TODO: You can add extra stuff from monitor edit here, simply need to make a new function to getComments() or something (that returns nothing by default), then have it emit with changes in MonitorWidget with the rest by calling the function
+
     def monitorTypeChanged(self, event):
         for _, w in self.variables_text.items():
             self.main_layout.removeWidget(w)
@@ -95,6 +97,20 @@ class MonitorWidgetSelect(QtWidgets.QWidget):
         self.updateGeometry()
         return self.main_layout.totalSizeHint()
         return self.main_layout.sizeHint()
+
+
+    def monitorChange(self, obj):
+        if obj['name'] != self.monitor_checkbox.currentText():
+            self.monitor_checkbox.setCurrentText(obj['name'])
+            # Should automatically generate whats needed by calling the state change
+            # Force it just in case
+            self.monitorTypeChanged(obj['name'])
+            for varname, lineedit in self.variables_text.items():
+                try:
+                    lineedit.setText(str(obj['variables'][varname]))
+                except Exception as e:
+                    logging.error(f"{obj['name']}: Cannot change {varname} value: {str(e)}")
+
     """
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
         super().resizeEvent(a0)
@@ -105,7 +121,8 @@ class MonitorWidgetSelect(QtWidgets.QWidget):
 
 
 class MonitorWidget(QtWidgets.QWidget):
-    monitorSignal = QtCore.pyqtSignal(dict)
+    monitorSignal = QtCore.pyqtSignal(dict)  # OUTGOING - When changes occur internally
+    monitorChange = QtCore.pyqtSignal(dict)  # INCOMING - When changes occur externally
     def __init__(self, name, channel, subchannel = None, parent = None, parse_function = lambda x: str(x), justify=None):
         super().__init__()
         self.name = name
@@ -119,6 +136,8 @@ class MonitorWidget(QtWidgets.QWidget):
         self.monitor_change = QtWidgets.QLabel()
         self.monitor_value = QtWidgets.QLabel()
         self.monitor_label.setText(name)
+
+        self.monitorChange.connect(self.monitorChangeCallback)
 
         self.monitor_type = MonitorWidgetSelect(self)
         self.monitor_type.uiChanged.connect(self.uiChanged)
@@ -189,6 +208,36 @@ class MonitorWidget(QtWidgets.QWidget):
         #self.parent.main_layout.addStretch()
         self.resetSize()
         self.adjustSize()
+
+    def monitorChangeCallback(self, obj):
+        if not all([
+            obj['monitor'] == self.name,
+            obj['channel'] == self.channel,
+            (obj['subchannel'] == self.subchannel) or (obj['subchannel'] is None and self.subchannel is None),
+        ]):
+            # This monitor wasnt changed
+            return
+        print("Working")
+        # We need to apply changes
+        if obj['active'] != self.checkbox.checkState():
+            self.checkbox.blockSignals(True)
+            self.checkbox.setCheckState(obj['active'])
+            self.checkbox.blockSignals(False)
+
+        self.monitor_type.monitorStatusChange.emit(obj['active'])
+        self.monitor_type.monitorChange(obj)
+        change = {
+            'monitor': self.name,
+            'channel': self.channel,
+            'subchannel': self.subchannel,
+            'active': obj['active'],
+            'type': self.monitor_type.getType(),  # 'range' or 'fixed'
+            'name': self.monitor_type.getMonitorType(),
+            'variables': self.monitor_type.getVariableValues(),  # tuple for range, value for fixed
+            'values': MONITORS[self.monitor_type.getMonitorType()]['values'],
+        }
+        print("Working", change)
+        self.monitorSignal.emit(change)
 
 if __name__ == "__main__":
     import sys

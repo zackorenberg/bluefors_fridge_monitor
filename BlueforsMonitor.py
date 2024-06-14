@@ -19,6 +19,7 @@ import traceback
 
 class BlueforsMonitor(QtWidgets.QWidget):
     monitorSignal = QtCore.pyqtSignal(dict)
+    monitorChange = QtCore.pyqtSignal(dict)
     widgetResize = QtCore.pyqtSignal()
     def __init__(self, log_path = LOG_PATH):
         super().__init__()
@@ -26,6 +27,7 @@ class BlueforsMonitor(QtWidgets.QWidget):
         self.fileManager.processedChanges.connect(self.processChangesCallback)
         self.monitorManager = MonitorManager(self)
         self.monitorSignal.connect(self.monitorSignalCallback) # When a monitor is toggled
+        #self.monitorChange.connect(self.propagateMonitorChange)
         self.mailer = Mailer(RECIPIENTS)
         self.values = self.fileManager.dumpData()
 
@@ -89,6 +91,7 @@ class BlueforsMonitor(QtWidgets.QWidget):
                             justify=justify[ch_type]
                         )
                         mw.monitorSignal.connect(self.monitorSignal)
+                        self.monitorChange.connect(mw.monitorChange)
                         mw.changeValue(t, v)
                         layout.addWidget(mw)
                         self.allMonitors[channel][subchannel] = mw
@@ -101,12 +104,12 @@ class BlueforsMonitor(QtWidgets.QWidget):
                         justify=justify[ch_type]
                     )
                     mw.monitorSignal.connect(self.monitorSignal)
+                    self.monitorChange.connect(mw.monitorChange)
                     mw.changeValue(t, value)
                     layout.addWidget(mw)
                     self.allMonitors[channel] = mw
 
             self.collapsableBoxes[ch_type].setContentLayout(layout)
-
         self.main_layout = QtWidgets.QVBoxLayout()
         for cb_name,cb_widget in self.collapsableBoxes.items():
             self.main_layout.addWidget(cb_widget)
@@ -143,10 +146,13 @@ class BlueforsMonitor(QtWidgets.QWidget):
                             except Exception as e:
                                 logging.error(f"Could not change value of {channel}:{subchannel} to {value} at {time}: {str(e)}")
                     else:
-                        try:
-                            self.allMonitors[channel].changeValue(time, values)
-                        except Exception as e:
-                            logging.error(f"Could not change value of {channel} to {value} at {time}: {str(e)}")
+                        if type(self.allMonitors[channel]) == dict:
+                            logging.error(f"Invalid value for channel {channel}: {values}")
+                        else:
+                            try:
+                                self.allMonitors[channel].changeValue(time, values)
+                            except Exception as e:
+                                logging.error(f"Could not change value of {channel} to {values} at {time}: {str(e)}")
 
         except Exception as e:
             logging.error(f"While processing changes: {str(e)}")
@@ -246,7 +252,7 @@ if __name__ == "__main__":
     amw = ActiveMonitorsWidget()
 
     bm.monitorSignal.connect(amw.monitorSignal)
-    amw.monitorEdited.connect(bm.monitorSignal)
+    amw.monitorChange.connect(bm.monitorChange)
 
     monitors_dock_widget.setWidget(amw)
     monitors_dock_widget.setContentsMargins(0,0,0,0)
@@ -275,6 +281,25 @@ if __name__ == "__main__":
     bm.init_ui()
     bm.init_threads()
     #bm.show()
+
+    if DEBUG_MODE:
+        amw.importMonitors(
+            {'CH1 T': {'monitor': 'CH1 T', 'channel': 'CH1 T', 'subchannel': None, 'name': 'WhenOff', 'variables': {}},
+             'Channels:one': {'monitor': 'Channels:one', 'channel': 'Channels', 'subchannel': 'one',
+                              'name': 'OutRangeMonitor', 'variables': {'minimum': 1.0, 'maximum': 100.0}},
+             'Status:one': {'monitor': 'Status:one', 'channel': 'Status', 'subchannel': 'one', 'name': 'EqualStr',
+                            'variables': {'value': 'aaaa'}}})
+
     w.show()
     sys.exit(app.exec_())
-
+    # TODO: Add automatic memory of last monitors?
+    # Can do it with
+    """
+    exitcode = app.exec()
+    with open(file, 'w') as f:
+        f.write(json.dump(amw.exportMonitors()))
+    or something like that
+    make sure that types are properly preserved if using json!
+    only need to differentiate strings, floats, int
+    so I doubt theres a use for serialization
+    """
