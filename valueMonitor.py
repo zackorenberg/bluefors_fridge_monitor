@@ -33,25 +33,25 @@ class InRangeMonitor: # Single monitor
 
     def checkValue(self, value):
         if self.inclusive:
-            if self.minimum and self.maximum:
+            if self.minimum is not None and self.maximum is not None:
                 return (self.minimum <= value and value <= self.maximum)
-            elif self.minimum:
+            elif self.minimum is not None:
                 return self.minimum <= value
-            elif self.maximum:
+            elif self.maximum is not None:
                 return value <= self.maximum
         else:
-            if self.minimum and self.maximum:
+            if self.minimum is not None and self.maximum is not None:
                 return (self.minimum < value and value < self.maximum)
-            elif self.minimum:
+            elif self.minimum is not None:
                 return self.minimum < value
-            elif self.maximum:
+            elif self.maximum is not None:
                 return value < self.maximum
         return False
 
     def __str__(self):
         operator = "<=" if self.inclusive else "<"
-        minimum = self.minimum if self.minimum else "-inf"
-        maximum = self.maximum if self.maximum else "inf"
+        minimum = self.minimum if self.minimum is not None else "-inf"
+        maximum = self.maximum if self.maximum is not None else "inf"
 
         return f"in range {minimum} {operator} value {operator} {maximum}"
 
@@ -63,25 +63,25 @@ class OutRangeMonitor: # Single monitor
 
     def checkValue(self, value):
         if self.inclusive:
-            if self.minimum and self.maximum:
+            if self.minimum is not None and self.maximum is not None:
                 return not (self.minimum <= value and value <= self.maximum)
-            elif self.minimum:
+            elif self.minimum is not None:
                 return not self.minimum <= value
-            elif self.maximum:
+            elif self.maximum is not None:
                 return not value <= self.maximum
         else:
-            if self.minimum and self.maximum:
+            if self.minimum is not None and self.maximum is not None:
                 return not (self.minimum < value and value < self.maximum)
-            elif self.minimum:
+            elif self.minimum is not None:
                 return not self.minimum < value
-            elif self.maximum:
+            elif self.maximum is not None:
                 return not value < self.maximum
         return True
 
     def __str__(self):
         operator = "<=" if self.inclusive else "<"
-        minimum = self.minimum if self.minimum else "-inf"
-        maximum = self.maximum if self.maximum else "inf"
+        minimum = self.minimum if self.minimum is not None else "-inf"
+        maximum = self.maximum if self.maximum is not None else "inf"
 
         return f"out of range {minimum} {operator} value {operator} {maximum}"
 

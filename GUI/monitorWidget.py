@@ -7,6 +7,7 @@ logging = logger.Logger(__file__)
 
 from valueMonitor import *
 
+
 class MonitorWidgetSelect(QtWidgets.QWidget):
     uiChanged = QtCore.pyqtSignal()
     monitorStatusChange = QtCore.pyqtSignal(bool)
@@ -155,9 +156,11 @@ class MonitorWidget(QtWidgets.QWidget):
             'subchannel':self.subchannel,
             'active':checked,
             'type':self.monitor_type.getType(), # 'range' or 'fixed'
+            'name':self.monitor_type.getMonitorType(),
             'variables':self.monitor_type.getVariableValues(), # tuple for range, value for fixed
             'values':MONITORS[self.monitor_type.getMonitorType()]['values']
         }
+
         self.monitorSignal.emit(change)
         #if hasattr(self.parent, 'monitorSignal'):
         #    self.parent.monitorSignal.emit(change) bad practice
@@ -192,7 +195,7 @@ if __name__ == "__main__":
     import random
 
     app = QtWidgets.QApplication(sys.argv)
-    monitor = MonitorWidget('compressor')
+    monitor = MonitorWidget('compressor', 'compressor')
     monitor.changeValue('On')
     monitor.show()
 

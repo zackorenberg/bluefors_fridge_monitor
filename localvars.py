@@ -36,13 +36,15 @@ VALVECONTROL_CHANNEL = ['Channels']
 
 CHANNELS_WITH_UNDERSCORE = ['heaters', 'Status']
 
-CHANNEL_BLACKLIST = ['CH8 P', 'CH8 T', 'CH8 R', 'CH9 P', 'CH9 T', 'CH9 R']
+CHANNEL_BLACKLIST = [f'CH{d+1} T' for d in range(7,16)] + [f'CH{d+1} R' for d in range(7,16)] +[f'CH{d+1} P' for d in range(7,16)]
+
 
 SUFFIX_FORMAT = "%y-%m-%d.log"
 DATE_FORMAT = "%y-%m-%d"
 TIME_FORMAT = "%H:%M:%S"
 
 THERMOMETRY_CHANNELS = [f'CH{d+1} T' for d in range(7)] + [f'CH{d+1} R' for d in range(7)] +[f'CH{d+1} P' for d in range(7)]
+
 VALVE_CHANNELS = ['Flowmeter', 'maxigauge', 'Channels']
 STATUS_CHANNELS = ['Status', 'heaters']
 
@@ -54,7 +56,7 @@ MONITOR_CHANNELS = {
 
 
 TABULATE_TABLE_FMT = 'fancy_grid'  # See here for options: https://pypi.org/project/tabulate/
-INDENT_EMAIL_INFORMATION = True
+INDENT_EMAIL_INFORMATION = False
 
 MAXIMUM_DATAPOINT_HISTORY = 300
 MAX_COLLAPSEABLE_HEIGHT = 400

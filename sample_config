@@ -2,3 +2,4 @@ LOG_PATH=C:\Path\To\Log\Folder
 SENDER=email@address.com
 PASSWORD=emailpassword
 RECIPIENTS=recipient@email.com
+;Can generate app passwords for gmail here: https://security.google.com/settings/security/apppasswords

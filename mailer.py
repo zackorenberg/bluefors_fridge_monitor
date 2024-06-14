@@ -43,10 +43,10 @@ def _send_email(subject, body, sender, recipients, password, smtp = 'smtp.gmail.
 
 
 class Mailer:
-    def __init__(self, recipients):
+    def __init__(self, recipients, email=SENDER, password=PASSWORD):
         self.recipients = recipients
-        #self.email = email
-        #self.password = password
+        self.email = email
+        self.password = password
 
 
     def stringTriggeredMonitors(self, monitors, all_values):

@@ -153,10 +153,11 @@ class BlueforsMonitor(QtWidgets.QWidget):
         triggered = (self.monitorManager.WhatMonitorsTriggered(vals))
         triggered_data = self.monitorManager.triggeredMonitorInfo(obj, triggered)
         if len(vals.items()) and len(triggered):
-            logging.warning(f"Alerts triggered: {', '.join([':'.join(x) if type(x) != str else x for x in triggered])}")
+            logging.info(f"Alerts triggered: {', '.join([':'.join(x) if type(x) != str else x for x in triggered])}")
         #if len(vals.items()):
         #    print(vals)
         if len(triggered) > 0:
+            print(f"Alerts triggered: {', '.join([':'.join(x) if type(x) != str else x for x in triggered])}")
             #print(triggered_data)
             self.mailer.send_alert(triggered_data, self.fileManager.currentStatus())
 
@@ -169,6 +170,7 @@ class BlueforsMonitor(QtWidgets.QWidget):
         :param obj: monitor object
         :return: None
         """
+
         if obj['active']:
             self.monitorManager.addMonitor(channel=obj['channel'], subchannel=obj['subchannel'], type=obj['type'], values=obj['values'], variables=obj['variables'])
             logging.info(f"Monitor {obj['monitor']} activated, (channel={obj['channel']}, subchannel={obj['subchannel']}, type={obj['type']}, values={obj['values']}, variables={obj['variables']})")
@@ -192,8 +194,9 @@ if __name__ == "__main__":
 
 
     logging.setLevel(logging.DEBUG)
-    MONITOR_CHANNELS['Thermometry'] = ['CH1 P', 'CH1 R', 'CH1 T']
-    MONITOR_CHANNELS['Valve'] = ['Channels', 'Flowmeter']
+    if DEBUG_MODE: # This is only when using the test log makers
+        MONITOR_CHANNELS['Thermometry'] = ['CH1 P', 'CH1 R', 'CH1 T']
+        MONITOR_CHANNELS['Valve'] = ['Channels', 'Flowmeter']
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QMainWindow()
     w.setWindowTitle("Bluefors Fridge Monitor")
@@ -214,9 +217,22 @@ if __name__ == "__main__":
     console_dock_widget.setWidget(cw)
     console_dock_widget.setContentsMargins(0,0,0,0)
 
+    monitors_dock_widget = QtWidgets.QDockWidget('Active Monitors')
+    monitors_dock_widget.setFeatures(QtWidgets.QDockWidget.DockWidgetFloatable |
+                 QtWidgets.QDockWidget.DockWidgetMovable)
+    from GUI.activeMonitorsWidget import ActiveMonitorsWidget
+    amw = ActiveMonitorsWidget()
+
+    bm.monitorSignal.connect(amw.monitorSignal)
+    amw.monitorEdited.connect(bm.monitorSignal)
+
+    monitors_dock_widget.setWidget(amw)
+    monitors_dock_widget.setContentsMargins(0,0,0,0)
+
     bm.widgetResize.connect(dock_widget.adjustSize)
     #dock_widget.resizeEvent = lambda x: w.adjustSize()
     w.addDockWidget(QtCore.Qt.DockWidgetArea.LeftDockWidgetArea, dock_widget)
+    w.addDockWidget(QtCore.Qt.DockWidgetArea.RightDockWidgetArea, monitors_dock_widget)
     w.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea, console_dock_widget)
     #dock_widget.show()
     bm.init_ui()
