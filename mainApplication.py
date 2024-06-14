@@ -119,13 +119,21 @@ class MainApplication(QtWidgets.QMainWindow):
 
 
         # Add docks to main window
-        self.addDockWidget(QtCore.Qt.DockWidgetArea.TopDockWidgetArea, self.dock_monitorsWidget)
-        self.addDockWidget(QtCore.Qt.DockWidgetArea.TopDockWidgetArea, self.dock_activeMonitorWidget)
+        if SPLIT_MONITOR_WIDGETS:
+            # Monitor top left, Active monitor top right, Console bottom
+            self.addDockWidget(QtCore.Qt.DockWidgetArea.TopDockWidgetArea, self.dock_monitorsWidget)
+            self.addDockWidget(QtCore.Qt.DockWidgetArea.TopDockWidgetArea, self.dock_activeMonitorWidget)
 
-        self.splitDockWidget(self.dock_monitorsWidget, self.dock_activeMonitorWidget, QtCore.Qt.Orientation.Horizontal)
-        self.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea, self.dock_consoleWidget)
+            self.splitDockWidget(self.dock_monitorsWidget, self.dock_activeMonitorWidget, QtCore.Qt.Orientation.Horizontal)
+            self.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea, self.dock_consoleWidget)
+        else:
+            # Monitor bottom left, Active monitor right, Console bottom left
+            self.addDockWidget(QtCore.Qt.DockWidgetArea.LeftDockWidgetArea, self.dock_monitorsWidget)
+            self.addDockWidget(QtCore.Qt.DockWidgetArea.RightDockWidgetArea, self.dock_activeMonitorWidget)
+            self.addDockWidget(QtCore.Qt.DockWidgetArea.LeftDockWidgetArea, self.dock_consoleWidget)
+            self.splitDockWidget(self.dock_monitorsWidget, self.dock_activeMonitorWidget, QtCore.Qt.Orientation.Horizontal)
 
-
+            self.splitDockWidget(self.dock_monitorsWidget, self.dock_consoleWidget, QtCore.Qt.Orientation.Vertical)
 
         # deal with sizing:
         if FIX_CONSOLE_HEIGHT:
@@ -176,13 +184,13 @@ class MainApplication(QtWidgets.QMainWindow):
 
     def resizeWidgets(self):
         #print("resizeWidgets")
-        self.monitorsWidget.adjustSize()
-        self.activeMonitorWidget.adjustSize()
+        #self.monitorsWidget.adjustSize()
+        #self.activeMonitorWidget.adjustSize()
         self.adjustSize()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
         super().resizeEvent(a0)
-        self.monitorsWidget.adjustSize()
+        #self.monitorsWidget.adjustSize()
 
 
 if __name__ == "__main__":

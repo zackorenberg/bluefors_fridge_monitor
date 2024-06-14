@@ -15,7 +15,8 @@ class MonitorWidgetSelect(QtWidgets.QWidget):
         self.parent = parent
         super().__init__()
 
-        self.main_layout = QtWidgets.QGridLayout()
+        #self.main_layout = QtWidgets.QGridLayout()
+        self.main_layout = QtWidgets.QHBoxLayout()
 
         self.monitorStatusChange.connect(self.monitorStatusChangeCallback)
 
@@ -27,7 +28,8 @@ class MonitorWidgetSelect(QtWidgets.QWidget):
         self.monitor_checkbox.setFixedWidth(cb_width)
         self.monitor_checkbox.currentTextChanged.connect(self.monitorTypeChanged)
         #self.monitor_checkbox.setStyleSheet("padding: 0")
-        self.main_layout.addWidget(self.monitor_checkbox, 0, 0, QtCore.Qt.AlignLeft)
+        #self.main_layout.addWidget(self.monitor_checkbox, 0, 0, QtCore.Qt.AlignLeft)
+        self.main_layout.addWidget(self.monitor_checkbox, QtCore.Qt.AlignLeft)
 
         #self.main_layout.addWidget(self.monitor_checkbox, 0, QtCore.Qt.AlignLeft)
         #self.main_layout.addWidget(self.value_widget)
@@ -60,7 +62,8 @@ class MonitorWidgetSelect(QtWidgets.QWidget):
                 self.variables_text[varname] = QtWidgets.QLineEdit()
                 self.variables_text[varname].setPlaceholderText(varname)
                 #self.main_layout.addWidget(QtWidgets.QLabel(varname), 0, col)
-                self.main_layout.addWidget(self.variables_text[varname], 0, col)
+                #self.main_layout.addWidget(self.variables_text[varname], 0, col)
+                self.main_layout.addWidget(self.variables_text[varname])
                 col += 1
         #self.main_layout.update()
         #self.adjustSize()
@@ -123,6 +126,7 @@ class MonitorWidgetSelect(QtWidgets.QWidget):
 class MonitorWidget(QtWidgets.QWidget):
     monitorSignal = QtCore.pyqtSignal(dict)  # OUTGOING - When changes occur internally
     monitorChange = QtCore.pyqtSignal(dict)  # INCOMING - When changes occur externally
+    uiChanged = QtCore.pyqtSignal()
     def __init__(self, name, channel, subchannel = None, parent = None, parse_function = lambda x: str(x), justify=None):
         super().__init__()
         self.name = name
@@ -140,6 +144,7 @@ class MonitorWidget(QtWidgets.QWidget):
         self.monitorChange.connect(self.monitorChangeCallback)
 
         self.monitor_type = MonitorWidgetSelect(self)
+        self.monitor_type.uiChanged.connect(self.uiChangedCallback)
         self.monitor_type.uiChanged.connect(self.uiChanged)
 
         if justify:
@@ -199,9 +204,9 @@ class MonitorWidget(QtWidgets.QWidget):
     def resetSize(self):
         self.mainLayout.update()
         w = self.mainLayout.sizeHint().width()
-        self.setFixedWidth(w)
+        self.setMaximumWidth(w)
 
-    def uiChanged(self):
+    def uiChangedCallback(self):
         #self.monitor_label.setText(self.monitor_label.text())
         #self.monitor_change.setText(self.monitor_change.text())
         #self.monitor_value.setText(self.monitor_value.text())

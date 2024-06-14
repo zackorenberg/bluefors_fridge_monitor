@@ -67,6 +67,7 @@ class MonitorsWidget(QtWidgets.QWidget):
                         )
                         mw.monitorSignal.connect(self.monitorSignal)
                         self.monitorChange.connect(mw.monitorChange)
+                        mw.uiChanged.connect(self.monitorWidgetUIChangedCallback)
                         mw.changeValue(t, v)
                         layout.addWidget(mw)
                         self.allMonitors[channel][subchannel] = mw
@@ -80,6 +81,7 @@ class MonitorsWidget(QtWidgets.QWidget):
                     )
                     mw.monitorSignal.connect(self.monitorSignal)
                     self.monitorChange.connect(mw.monitorChange)
+                    mw.uiChanged.connect(self.monitorWidgetUIChangedCallback)
                     mw.changeValue(t, value)
                     layout.addWidget(mw)
                     self.allMonitors[channel] = mw
@@ -136,5 +138,12 @@ class MonitorsWidget(QtWidgets.QWidget):
         """
         self.updateGeometry()
         self.resize(self.main_layout.sizeHint())
+        #self.resize(self.main_layout.minimumSize())
         #self.adjustSize()
         self.widgetResize.emit()
+
+    def monitorWidgetUIChangedCallback(self):
+        #self.updateGeometry()
+        #for ch_type, box in self.collapsableBoxes.items():
+        #    box.setMinimumWidth(box.layout().maximumSize().width() + box.content_area.verticalScrollBar().sizeHint().width())
+        pass

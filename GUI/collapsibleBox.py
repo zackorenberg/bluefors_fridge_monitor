@@ -79,7 +79,7 @@ class CollapsibleBox(QtWidgets.QWidget):
         self.content_area.setWidgetResizable(True)
         self.content_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.content_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.content_area.setMinimumWidth(layout.maximumSize().width() + self.content_area.verticalScrollBar().sizeHint().width())
+        self.content_area.setMinimumWidth(layout.minimumSize().width() + self.content_area.verticalScrollBar().sizeHint().width())
         collapsed_height = (
             self.sizeHint().height() - self.content_area.maximumHeight()
         )
