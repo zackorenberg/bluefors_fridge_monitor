@@ -78,9 +78,11 @@ def process_log_file_rows(processed, channel, date):
             time_str = time_dt.strftime('%d-%m-%y,%H:%M:%S')
             if time_str in ",".join(row[1:]):  # We have two errors
                 errors = [x.strip(',').split(",") for x in (",".join(row[1:])).split(time_str)]
-                data[row[0]] = [{error[0]:error[1:]} for error in errors]
+                #data[row[0]] = [{error[0]:error[1:]} for error in errors]
+                data[row[0]] = ", ".join([f"{error[0]}={' '.join(error[1:])}" for error in errors])
             else:
-                data[row[0]] = [{row[1]: row[2:]}]
+                #data[row[0]] = [{row[1]: ",".join(row[2:])}]
+                data[row[0]] = f"{row[1]}={' '.join(row[2:])}" #[{row[1]: ",".join(row[2:])}]
 
     elif channel in KV_CHANNELS:
         for row in processed:

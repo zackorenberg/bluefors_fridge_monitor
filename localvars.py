@@ -25,7 +25,7 @@ with open(os.path.join(dir, CONFIG_FILE), 'r') as f:
 
 
 VERBOSE = True  # TODO: implement this stuff
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 SUBCHANNEL_DELIMITER = ':'
 
@@ -45,13 +45,17 @@ TIME_FORMAT = "%H:%M:%S"
 
 THERMOMETRY_CHANNELS = [f'CH{d+1} T' for d in range(7)] + [f'CH{d+1} R' for d in range(7)] +[f'CH{d+1} P' for d in range(7)]
 
-VALVE_CHANNELS = ['Flowmeter', 'maxigauge', 'Channels']
-STATUS_CHANNELS = ['Status', 'heaters']
+VALVE_CHANNELS = ['Flowmeter', 'Channels']
+PRESSURE_CHANNELS = ['Flowmeter', 'maxigauge']
+STATUS_CHANNELS = ['Status', 'Error']
+HEATER_CHANNELS = ['heaters']
 
 MONITOR_CHANNELS = {
     'Thermometry':THERMOMETRY_CHANNELS,
     'Valve':VALVE_CHANNELS,
-    'Status':STATUS_CHANNELS
+    'Pressure and Flow':PRESSURE_CHANNELS,
+    'Status':STATUS_CHANNELS,
+    'Heaters':HEATER_CHANNELS,
 }
 
 

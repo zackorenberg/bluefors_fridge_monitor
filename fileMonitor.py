@@ -15,7 +15,6 @@ from PyQt5.QtCore import QThread, pyqtSignal, QTimer, QObject
 
 from fileUtilities import *
 from fileReader import *
-#from fileManager import *
 
 
 class LogFileWatchdog(FileSystemEventHandler, QObject):

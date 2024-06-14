@@ -52,7 +52,11 @@ class BlueforsMonitor(QtWidgets.QWidget):
 
         for ch_type, channels in MONITOR_CHANNELS.items():
             for channel in channels:
-                t, value = sorted(self.values[channel], key=lambda x: x[0])[-1]
+                try:
+                    t, value = sorted(self.values[channel], key=lambda x: x[0])[-1]
+                except Exception as e:
+                    logging.error(f"Encountered an error while trying to find last values: {str(e)}")
+                    t, value = 0, None
                 if type(value) == dict:
                     justify = max(justify, max([len(f"{channel}:{ch}") for ch in value.keys()]))
                 else:
@@ -67,7 +71,11 @@ class BlueforsMonitor(QtWidgets.QWidget):
             for channel in channels:
                 self.allMonitors[channel] = {} # Can be overwritten
                 #print(self.values.keys())
-                t, value = sorted(self.values[channel], key=lambda x:x[0])[-1]
+                try:
+                    t, value = sorted(self.values[channel], key=lambda x:x[0])[-1]
+                except Exception as e:
+                    logging.error(f"Encountered an error while trying to find last values: {str(e)}")
+                    t, value = 0, None
                 if type(value) == dict:
                     channels = [f"{channel}:{ch}" for ch in value.keys()]
                     values = list(value.values())
@@ -200,10 +208,15 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QMainWindow()
     w.setWindowTitle("Bluefors Fridge Monitor")
+    if DEBUG_MODE:
+        w.setWindowTitle("Bluefors Fridge Monitor (DEBUG)")
     dock_widget = QtWidgets.QDockWidget('Monitors')
     dock_widget.setFeatures(QtWidgets.QDockWidget.DockWidgetFloatable |
                  QtWidgets.QDockWidget.DockWidgetMovable)
-    bm = BlueforsMonitor('tests/test_logs')
+    if DEBUG_MODE:
+        bm = BlueforsMonitor('tests/test_logs')
+    else:
+        bm = BlueforsMonitor()
 
     dock_widget.setWidget(bm)
     dock_widget.setContentsMargins(0,0,0,0)
