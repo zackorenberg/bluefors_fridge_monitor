@@ -1,7 +1,7 @@
 from PyQt5 import QtCore, QtWidgets, Qt
 from datetime import datetime
 import localvars
-from Core import logger
+import logger
 
 logging = logger.Logger(__file__)
 

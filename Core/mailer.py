@@ -4,6 +4,7 @@ from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
 import logger
+
 logging = logger.Logger(__file__)
 from localvars import *
 from tabulate import tabulate
@@ -112,7 +113,7 @@ class Mailer:
         text = _write_test_email(data_dump_str)
         if DEBUG_MODE:
             current_time = datetime.now().strftime(f"{DATE_FORMAT}_{TIME_FORMAT}")
-            with open(f"./testEmails/alert_{current_time.replace(':','-')}.email", 'w', encoding='utf-8') as f:
+            with open(f"{ROOT_DIR}/testEmails/alert_{current_time.replace(':','-')}.email", 'w', encoding='utf-8') as f:
                 f.write(f"Subject: {subject}\n")
                 f.write(f"Recipients: {', '.join(RECIPIENTS)}\n")
                 f.write(f"Body:\n")

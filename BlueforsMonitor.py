@@ -11,7 +11,7 @@ from GUI.monitorWidget import MonitorWidget
 from GUI.consoleWidget import Printerceptor, ConsoleWidget
 import sys
 sys.stdout = stdout = Printerceptor()
-from Core import logger
+import logger
 
 logging = logger.Logger(__file__)
 

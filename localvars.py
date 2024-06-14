@@ -8,8 +8,8 @@ PASSWORD = None
 
 # TODO: turn this into a class so can be dynamically changed with gui
 import os
-dir = os.path.dirname(__file__)
-with open(os.path.join(dir, CONFIG_FILE), 'r') as f:
+ROOT_DIR = os.path.dirname(__file__)
+with open(os.path.join(ROOT_DIR, CONFIG_FILE), 'r') as f:
     lines = f.readlines()
     # Set LOG_PATH
     try:

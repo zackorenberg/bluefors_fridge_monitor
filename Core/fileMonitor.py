@@ -1,6 +1,7 @@
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import logger
+
 logging = logger.Logger(__file__)
 
 import time
@@ -8,8 +9,8 @@ import time
 from PyQt5.QtCore import QThread, pyqtSignal, QObject
 
 
-from fileUtilities import *
-from fileReader import *
+from Core.fileUtilities import *
+from Core.fileReader import *
 
 
 class LogFileWatchdog(FileSystemEventHandler, QObject):
