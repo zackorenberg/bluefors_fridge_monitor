@@ -30,7 +30,7 @@ DEBUG_MODE = False
 SUBCHANNEL_DELIMITER = ':'
 
 KV_CHANNELS = ['heaters', 'Status']
-ERROR_CHANNEL = ['Error']
+ERROR_CHANNEL = ['Errors']
 MAXIGAUGE_CHANNEL = ['maxigauge']
 VALVECONTROL_CHANNEL = ['Channels']
 
@@ -47,7 +47,7 @@ THERMOMETRY_CHANNELS = [f'CH{d+1} T' for d in range(7)] + [f'CH{d+1} R' for d in
 
 VALVE_CHANNELS = ['Flowmeter', 'Channels']
 PRESSURE_CHANNELS = ['Flowmeter', 'maxigauge']
-STATUS_CHANNELS = ['Status', 'Error']
+STATUS_CHANNELS = ['Status', 'Errors']
 HEATER_CHANNELS = ['heaters']
 
 MONITOR_CHANNELS = {
