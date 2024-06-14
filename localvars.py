@@ -66,5 +66,6 @@ MAXIMUM_DATAPOINT_HISTORY = 300
 MAX_COLLAPSEABLE_HEIGHT = 400
 
 FIX_CONSOLE_HEIGHT = True
+FIX_ACTIVE_WIDTH = True
 
 CHANGE_PROCESS_CHECK = 1 # Number of seconds between checking for changes (We do this instead of immediate processing because many files sometimes get modified concurrently and we want as accurate a result as possible when a monitor goes off

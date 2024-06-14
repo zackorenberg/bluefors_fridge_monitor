@@ -56,6 +56,6 @@ class ConsoleWidget(QtWidgets.QWidget):
         sb = self.consoleTextEdit.verticalScrollBar()
         sb.setValue(sb.maximum())
 
-    def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
-        super().resizeEvent(a0)
-        self.widgetResize.emit()
+    #def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+    #    super().resizeEvent(a0)
+    #    self.widgetResize.emit()

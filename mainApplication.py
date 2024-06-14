@@ -119,8 +119,10 @@ class MainApplication(QtWidgets.QMainWindow):
 
 
         # Add docks to main window
-        self.addDockWidget(QtCore.Qt.DockWidgetArea.LeftDockWidgetArea, self.dock_monitorsWidget)
-        self.addDockWidget(QtCore.Qt.DockWidgetArea.RightDockWidgetArea, self.dock_activeMonitorWidget)
+        self.addDockWidget(QtCore.Qt.DockWidgetArea.TopDockWidgetArea, self.dock_monitorsWidget)
+        self.addDockWidget(QtCore.Qt.DockWidgetArea.TopDockWidgetArea, self.dock_activeMonitorWidget)
+
+        self.splitDockWidget(self.dock_monitorsWidget, self.dock_activeMonitorWidget, QtCore.Qt.Orientation.Horizontal)
         self.addDockWidget(QtCore.Qt.DockWidgetArea.BottomDockWidgetArea, self.dock_consoleWidget)
 
 
@@ -131,6 +133,8 @@ class MainApplication(QtWidgets.QMainWindow):
             self.consoleWidget.consoleTextEdit.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
             self.consoleWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
             self.dock_consoleWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        if FIX_ACTIVE_WIDTH:
+            self.activeMonitorWidget.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
 
 
 
@@ -171,9 +175,14 @@ class MainApplication(QtWidgets.QMainWindow):
 
 
     def resizeWidgets(self):
+        #print("resizeWidgets")
         self.monitorsWidget.adjustSize()
         self.activeMonitorWidget.adjustSize()
         self.adjustSize()
+
+    def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+        super().resizeEvent(a0)
+        self.monitorsWidget.adjustSize()
 
 
 if __name__ == "__main__":

@@ -205,7 +205,6 @@ class ActiveMonitorsWidget(QtWidgets.QWidget):
 
         #self.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
 
-
     def resizeTableSections(self):
         """
         self.table_view.resizeColumnsToContents()
@@ -223,8 +222,8 @@ class ActiveMonitorsWidget(QtWidgets.QWidget):
             total_width += self.table_view.columnWidth(column)
         #print(total_width, self.table_view.width())
         self.table_view.setMinimumWidth(total_width)
-        self.table_view.resize(total_width, self.table_view.height())
         self.table_view.adjustSize()
+        self.table_view.resize(total_width, self.table_view.height())
 
         if self.table.columnCount(QtCore.QModelIndex()) > 0:
             self.table_view.horizontalHeader().setSectionResizeMode(0,

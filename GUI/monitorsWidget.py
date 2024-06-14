@@ -136,5 +136,5 @@ class MonitorsWidget(QtWidgets.QWidget):
         """
         self.updateGeometry()
         self.resize(self.main_layout.sizeHint())
-        self.adjustSize()
+        #self.adjustSize()
         self.widgetResize.emit()
