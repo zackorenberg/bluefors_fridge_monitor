@@ -217,7 +217,7 @@ class MonitorWidget(QtWidgets.QWidget):
         ]):
             # This monitor wasnt changed
             return
-        print("Working")
+        #print("Working")
         # We need to apply changes
         if obj['active'] != self.checkbox.checkState():
             self.checkbox.blockSignals(True)
@@ -236,7 +236,7 @@ class MonitorWidget(QtWidgets.QWidget):
             'variables': self.monitor_type.getVariableValues(),  # tuple for range, value for fixed
             'values': MONITORS[self.monitor_type.getMonitorType()]['values'],
         }
-        print("Working", change)
+        #print("Working", change)
         self.monitorSignal.emit(change)
 
 if __name__ == "__main__":

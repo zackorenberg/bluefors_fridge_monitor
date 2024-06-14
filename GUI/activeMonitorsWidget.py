@@ -218,10 +218,10 @@ class ActiveMonitorsWidget(QtWidgets.QWidget):
         total_width = self.table_view.verticalHeader().width() + 20  # Add 2 for border
         if self.table_view.verticalScrollBar().isVisible():
             total_width += self.table_view.verticalScrollBar().width()
-        print(total_width)
+        #print(total_width)
         for column in range(self.table.columnCount(QtCore.QModelIndex())):
             total_width += self.table_view.columnWidth(column)
-        print(total_width, self.table_view.width())
+        #print(total_width, self.table_view.width())
         self.table_view.setMinimumWidth(total_width)
         self.table_view.resize(total_width, self.table_view.height())
         self.table_view.adjustSize()

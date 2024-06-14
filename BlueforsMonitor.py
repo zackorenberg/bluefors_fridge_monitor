@@ -205,7 +205,7 @@ class BlueforsMonitor(QtWidgets.QWidget):
         self.adjustSize()
 if __name__ == "__main__":
     import sys
-
+    import json
     logging.setLevel(logging.DEBUG)
     if DEBUG_MODE: # This is only when using the test log makers
         MONITOR_CHANNELS['Thermometry'] = ['CH1 P', 'CH1 R', 'CH1 T']
@@ -258,7 +258,7 @@ if __name__ == "__main__":
     monitors_dock_widget.setContentsMargins(0,0,0,0)
 
     bm.widgetResize.connect(dock_widget.adjustSize)
-
+    
     def resizeEvent(x):
         super(type(dock_widget), dock_widget).resizeEvent(x)
         amw.resize(amw.width(), bm.height())
@@ -281,7 +281,12 @@ if __name__ == "__main__":
     bm.init_ui()
     bm.init_threads()
     #bm.show()
-
+    
+    if os.path.exists('history.monitor'):
+        with open('history.monitor', 'r') as f:
+            monitorHistory = json.load(f)
+            amw.importMonitors(monitorHistory)
+    
     if DEBUG_MODE:
         amw.importMonitors(
             {'CH1 T': {'monitor': 'CH1 T', 'channel': 'CH1 T', 'subchannel': None, 'name': 'WhenOff', 'variables': {}},
@@ -291,7 +296,12 @@ if __name__ == "__main__":
                             'variables': {'value': 'aaaa'}}})
 
     w.show()
-    sys.exit(app.exec_())
+    exitcode = app.exec_()
+    exportedMonitors = amw.exportMonitors()
+    
+    with open('history.monitor', 'w') as f:
+        json.dump(exportedMonitors, f)
+    sys.exit(exitcode)
     # TODO: Add automatic memory of last monitors?
     # Can do it with
     """
