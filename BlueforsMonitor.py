@@ -1,9 +1,9 @@
-from PyQt5 import QtCore, QtWidgets, Qt, QtGui
+from PyQt5 import QtCore, QtWidgets
 
 from localvars import *
-from mailer import Mailer
-from fileManager import FileManager
-from monitorManager import MonitorManager
+from Core.mailer import Mailer
+from Core.fileManager import FileManager
+from Core.monitorManager import MonitorManager
 
 from GUI.collapsibleBox import CollapsibleBox
 from GUI.monitorWidget import MonitorWidget
@@ -11,7 +11,8 @@ from GUI.monitorWidget import MonitorWidget
 from GUI.consoleWidget import Printerceptor, ConsoleWidget
 import sys
 sys.stdout = stdout = Printerceptor()
-import logger
+from Core import logger
+
 logging = logger.Logger(__file__)
 
 import traceback
@@ -198,8 +199,6 @@ class BlueforsMonitor(QtWidgets.QWidget):
         self.adjustSize()
 if __name__ == "__main__":
     import sys
-    import random
-
 
     logging.setLevel(logging.DEBUG)
     if DEBUG_MODE: # This is only when using the test log makers

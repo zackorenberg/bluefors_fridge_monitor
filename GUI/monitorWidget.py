@@ -1,11 +1,11 @@
-from PyQt5 import QtCore, QtGui, QtWidgets, Qt
+from PyQt5 import QtCore, QtWidgets, Qt
 from datetime import datetime
 import localvars
-import time
-import logger
+from Core import logger
+
 logging = logger.Logger(__file__)
 
-from valueMonitor import *
+from Core.valueMonitors import *
 
 
 class MonitorWidgetSelect(QtWidgets.QWidget):
@@ -192,7 +192,6 @@ class MonitorWidget(QtWidgets.QWidget):
 
 if __name__ == "__main__":
     import sys
-    import random
 
     app = QtWidgets.QApplication(sys.argv)
     monitor = MonitorWidget('compressor', 'compressor')

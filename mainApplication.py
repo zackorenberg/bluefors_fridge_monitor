@@ -1,8 +1,5 @@
-from PyQt5 import QtCore, QtWidgets
-from localvars import *
-from fileReader import *
-from fileUtilities import *
-from fileManager import *
+from PyQt5 import QtWidgets
+from Core.fileManager import *
 
 
 

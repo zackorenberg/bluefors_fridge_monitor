@@ -1,4 +1,3 @@
-from valueMonitor import *
 import logger
 logging = logger.Logger(__file__)
 

@@ -1,12 +1,11 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
-from datetime import datetime
-import localvars
 import time
-import logger
+from Core import logger
+
 logging = logger.Logger(__file__)
 
-from valueMonitor import *
+from Core.valueMonitors import *
 
 # To format properly
 def getMonitorString(mtype, mvalues, mvariables):
