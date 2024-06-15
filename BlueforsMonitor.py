@@ -1,9 +1,9 @@
-from PyQt5 import QtCore, QtWidgets, Qt, QtGui
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 from localvars import *
-from mailer import Mailer
-from fileManager import FileManager
-from monitorManager import MonitorManager
+from Core.mailer import Mailer
+from Core.fileManager import FileManager
+from Core.monitorManager import MonitorManager
 
 from GUI.collapsibleBox import CollapsibleBox
 from GUI.monitorWidget import MonitorWidget
@@ -11,13 +11,18 @@ from GUI.monitorWidget import MonitorWidget
 from GUI.consoleWidget import Printerceptor, ConsoleWidget
 import sys
 sys.stdout = stdout = Printerceptor()
+if sys.platform == 'win32':
+    import ctypes
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('bluefors.monitor.app.1')
 import logger
+
 logging = logger.Logger(__file__)
 
 import traceback
 
 class BlueforsMonitor(QtWidgets.QWidget):
     monitorSignal = QtCore.pyqtSignal(dict)
+    monitorChange = QtCore.pyqtSignal(dict)
     widgetResize = QtCore.pyqtSignal()
     def __init__(self, log_path = LOG_PATH):
         super().__init__()
@@ -25,8 +30,12 @@ class BlueforsMonitor(QtWidgets.QWidget):
         self.fileManager.processedChanges.connect(self.processChangesCallback)
         self.monitorManager = MonitorManager(self)
         self.monitorSignal.connect(self.monitorSignalCallback) # When a monitor is toggled
+        #self.monitorChange.connect(self.propagateMonitorChange)
         self.mailer = Mailer(RECIPIENTS)
         self.values = self.fileManager.dumpData()
+
+        if SEND_TEST_EMAIL_ON_LAUNCH:
+            self.mailer.send_test(self.fileManager.currentStatus())
 
         self.collapsableBoxes = {}
         self.allMonitors = {}
@@ -88,6 +97,7 @@ class BlueforsMonitor(QtWidgets.QWidget):
                             justify=justify[ch_type]
                         )
                         mw.monitorSignal.connect(self.monitorSignal)
+                        self.monitorChange.connect(mw.monitorChange)
                         mw.changeValue(t, v)
                         layout.addWidget(mw)
                         self.allMonitors[channel][subchannel] = mw
@@ -100,12 +110,12 @@ class BlueforsMonitor(QtWidgets.QWidget):
                         justify=justify[ch_type]
                     )
                     mw.monitorSignal.connect(self.monitorSignal)
+                    self.monitorChange.connect(mw.monitorChange)
                     mw.changeValue(t, value)
                     layout.addWidget(mw)
                     self.allMonitors[channel] = mw
 
             self.collapsableBoxes[ch_type].setContentLayout(layout)
-
         self.main_layout = QtWidgets.QVBoxLayout()
         for cb_name,cb_widget in self.collapsableBoxes.items():
             self.main_layout.addWidget(cb_widget)
@@ -142,10 +152,13 @@ class BlueforsMonitor(QtWidgets.QWidget):
                             except Exception as e:
                                 logging.error(f"Could not change value of {channel}:{subchannel} to {value} at {time}: {str(e)}")
                     else:
-                        try:
-                            self.allMonitors[channel].changeValue(time, values)
-                        except Exception as e:
-                            logging.error(f"Could not change value of {channel} to {value} at {time}: {str(e)}")
+                        if type(self.allMonitors[channel]) == dict:
+                            logging.error(f"Invalid value for channel {channel}: {values}")
+                        else:
+                            try:
+                                self.allMonitors[channel].changeValue(time, values)
+                            except Exception as e:
+                                logging.error(f"Could not change value of {channel} to {values} at {time}: {str(e)}")
 
         except Exception as e:
             logging.error(f"While processing changes: {str(e)}")
@@ -198,15 +211,14 @@ class BlueforsMonitor(QtWidgets.QWidget):
         self.adjustSize()
 if __name__ == "__main__":
     import sys
-    import random
-
-
+    import json
     logging.setLevel(logging.DEBUG)
     if DEBUG_MODE: # This is only when using the test log makers
         MONITOR_CHANNELS['Thermometry'] = ['CH1 P', 'CH1 R', 'CH1 T']
         MONITOR_CHANNELS['Valve'] = ['Channels', 'Flowmeter']
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QMainWindow()
+    w.setWindowIcon(QtGui.QIcon('Resources/BlueforsIcon.ico'))
     w.setWindowTitle("Bluefors Fridge Monitor")
     if DEBUG_MODE:
         w.setWindowTitle("Bluefors Fridge Monitor (DEBUG)")
@@ -247,13 +259,13 @@ if __name__ == "__main__":
     amw = ActiveMonitorsWidget()
 
     bm.monitorSignal.connect(amw.monitorSignal)
-    amw.monitorEdited.connect(bm.monitorSignal)
+    amw.monitorChange.connect(bm.monitorChange)
 
     monitors_dock_widget.setWidget(amw)
     monitors_dock_widget.setContentsMargins(0,0,0,0)
 
     bm.widgetResize.connect(dock_widget.adjustSize)
-
+    
     def resizeEvent(x):
         super(type(dock_widget), dock_widget).resizeEvent(x)
         amw.resize(amw.width(), bm.height())
@@ -276,6 +288,41 @@ if __name__ == "__main__":
     bm.init_ui()
     bm.init_threads()
     #bm.show()
+    
+    if os.path.exists('history.monitor'):
+        with open('history.monitor', 'r') as f:
+            try:
+                monitorHistory = json.load(f)
+                amw.importMonitors(monitorHistory)
+            except Exception as e:
+                logging.warning(f"Cannot load monitor history: {str(e)}")
+    
+    if DEBUG_MODE:
+        amw.importMonitors(
+            {'CH1 T': {'monitor': 'CH1 T', 'channel': 'CH1 T', 'subchannel': None, 'name': 'WhenOff', 'variables': {}},
+             'Channels:one': {'monitor': 'Channels:one', 'channel': 'Channels', 'subchannel': 'one',
+                              'name': 'OutRangeMonitor', 'variables': {'minimum': 1.0, 'maximum': 100.0}},
+             'Status:one': {'monitor': 'Status:one', 'channel': 'Status', 'subchannel': 'one', 'name': 'EqualStr',
+                            'variables': {'value': 'aaaa'}}})
+    
     w.show()
-    sys.exit(app.exec_())
-
+    try:
+        exitcode = app.exec_()
+    except KeyboardInterrupt:
+        print("Quitting program")
+    exportedMonitors = amw.exportMonitors()
+    if len(exportedMonitors.keys()) > 0:
+        with open('history.monitor', 'w') as f:
+            json.dump(exportedMonitors, f)
+    sys.exit(exitcode)
+    # TODO: Add automatic memory of last monitors?
+    # Can do it with
+    """
+    exitcode = app.exec()
+    with open(file, 'w') as f:
+        f.write(json.dump(amw.exportMonitors()))
+    or something like that
+    make sure that types are properly preserved if using json!
+    only need to differentiate strings, floats, int
+    so I doubt theres a use for serialization
+    """

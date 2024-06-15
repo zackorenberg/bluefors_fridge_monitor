@@ -8,8 +8,8 @@ PASSWORD = None
 
 # TODO: turn this into a class so can be dynamically changed with gui
 import os
-dir = os.path.dirname(__file__)
-with open(os.path.join(dir, CONFIG_FILE), 'r') as f:
+ROOT_DIR = os.path.dirname(__file__)
+with open(os.path.join(ROOT_DIR, CONFIG_FILE), 'r') as f:
     lines = f.readlines()
     # Set LOG_PATH
     try:
@@ -66,5 +66,11 @@ MAXIMUM_DATAPOINT_HISTORY = 300
 MAX_COLLAPSEABLE_HEIGHT = 400
 
 FIX_CONSOLE_HEIGHT = True
+FIX_ACTIVE_WIDTH = True
+
+SEND_TEST_EMAIL_ON_LAUNCH = False
+
+SPLIT_MONITOR_WIDGETS = True # This will make it so monitor selector is left, active monitors are right, and console is full bottom
+# If false, monitor will be top left, console will be bottom left, and active monitor will be entirely right
 
 CHANGE_PROCESS_CHECK = 1 # Number of seconds between checking for changes (We do this instead of immediate processing because many files sometimes get modified concurrently and we want as accurate a result as possible when a monitor goes off

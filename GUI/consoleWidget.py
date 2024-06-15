@@ -1,5 +1,5 @@
 ### This widget makes a copy of whats printed to standard output to a glorified text edit
-from PyQt5 import QtCore, QtWidgets, Qt
+from PyQt5 import QtCore, QtWidgets, QtGui
 import sys
 
 
@@ -31,6 +31,7 @@ class Printerceptor(QtCore.QObject): # Basically tee but emits a signal instead
 
 class ConsoleWidget(QtWidgets.QWidget):
     printToConsole = QtCore.pyqtSignal(str)
+    widgetResize = QtCore.pyqtSignal()
     def __init__(self):
         super().__init__()
         self.printToConsole.connect(self.consoleText)
@@ -54,3 +55,7 @@ class ConsoleWidget(QtWidgets.QWidget):
         """ automatically scrolls so latest message is present """
         sb = self.consoleTextEdit.verticalScrollBar()
         sb.setValue(sb.maximum())
+
+    #def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+    #    super().resizeEvent(a0)
+    #    self.widgetResize.emit()

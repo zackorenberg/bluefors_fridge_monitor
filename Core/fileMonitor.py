@@ -1,20 +1,16 @@
-from localvars import *
-
-import os
-from datetime import datetime
-
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import logger
+
 logging = logger.Logger(__file__)
 
 import time
 
-from PyQt5.QtCore import QThread, pyqtSignal, QTimer, QObject
+from PyQt5.QtCore import QThread, pyqtSignal, QObject
 
 
-from fileUtilities import *
-from fileReader import *
+from Core.fileUtilities import *
+from Core.fileReader import *
 
 
 class LogFileWatchdog(FileSystemEventHandler, QObject):
@@ -80,7 +76,7 @@ if __name__ == "__main__":
         mainSignal = pyqtSignal(str, str, str)
         def __init__(self):
             super().__init__()
-            self.overseer = Overseer(log_path='tests/test_logs')
+            self.overseer = Overseer(log_path='../tests/test_logs')
             self.overseer.changeSignal.connect(self.callback)
 
         def run(self):
@@ -132,7 +128,7 @@ if __name__ == "__main__":
         mainSignal = pyqtSignal(str, str, str)
         def __init__(self):
             super().__init__()
-            self.overseer = Overseer(log_path='tests/test_logs')
+            self.overseer = Overseer(log_path='../tests/test_logs')
             self.overseer.changeSignal.connect(self.callback)
 
         def run(self):
@@ -166,7 +162,7 @@ if __name__ == "__main__":
     print(load_all_possible_log_files())
 
     current_date = datetime.now().strftime(DATE_FORMAT)
-    overseer = Overseer(log_path='tests/test_logs')
+    overseer = Overseer(log_path='../tests/test_logs')
     overseer.run()
 
     while True:

@@ -4,6 +4,7 @@ from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
 import logger
+
 logging = logger.Logger(__file__)
 from localvars import *
 from tabulate import tabulate
@@ -69,7 +70,7 @@ class Mailer:
         ])
         return triggered_monitors_str
 
-    def stringTabulatedDataDump(self, monitors, all_values):
+    def stringTabulatedDataDump(self, all_values):
         tabulated_data_dump_str = str(tabulate(
             sum([
                 [
@@ -89,7 +90,7 @@ class Mailer:
         subject = '[URGENT] BlueFors Alert Triggered!'
 
         triggered_monitors_str = self.stringTriggeredMonitors(monitors, all_values)
-        data_dump_str = self.stringTabulatedDataDump(monitors, all_values)
+        data_dump_str = self.stringTabulatedDataDump(all_values)
         if INDENT_EMAIL_INFORMATION:
             triggered_monitors_str = "\t" + "\n\t".join(triggered_monitors_str.split('\n'))
             data_dump_str = "\t" + "\n\t".join(data_dump_str.split('\n'))
@@ -112,7 +113,7 @@ class Mailer:
         text = _write_test_email(data_dump_str)
         if DEBUG_MODE:
             current_time = datetime.now().strftime(f"{DATE_FORMAT}_{TIME_FORMAT}")
-            with open(f"./testEmails/alert_{current_time.replace(':','-')}.email", 'w', encoding='utf-8') as f:
+            with open(f"{ROOT_DIR}/testEmails/alert_{current_time.replace(':','-')}.email", 'w', encoding='utf-8') as f:
                 f.write(f"Subject: {subject}\n")
                 f.write(f"Recipients: {', '.join(RECIPIENTS)}\n")
                 f.write(f"Body:\n")

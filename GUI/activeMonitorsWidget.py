@@ -1,12 +1,13 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
-from datetime import datetime
-import localvars
 import time
 import logger
+
 logging = logger.Logger(__file__)
 
-from valueMonitor import *
+from Core.valueMonitors import *
+from GUI.monitorWidget import MonitorWidgetSelect
+from localvars import *
 
 # To format properly
 def getMonitorString(mtype, mvalues, mvariables):
@@ -97,13 +98,84 @@ class MonitorTable(QtCore.QAbstractTableModel):
         self._indexes = {r[0]:d for d,r in enumerate(self._data) if len(r) and r[0] in self._monitors.keys()}
 
 
-class ActiveMonitorEdit(QtWidgets.QWidget):
-    pass
+class ActiveMonitorEdit(QtWidgets.QDialog):
+    def __init__(self, parent, monitor_obj):
+        super().__init__(parent)
+        self.monitor = monitor_obj
 
+
+        self.variables_type = {}
+        self.variables_text = {}
+
+        self.setWindowTitle(f"Edit monitor {self.monitor['monitor']}")
+        self.layout = QtWidgets.QVBoxLayout(self)
+
+        self.form_layout = QtWidgets.QFormLayout()
+        self.active_checkbox = QtWidgets.QCheckBox()
+        self.active_checkbox.setCheckState(self.monitor['active'])
+        self.monitor_combobox = QtWidgets.QComboBox(self)
+
+        self.monitor_combobox.addItem('Select Monitor Type')
+        self.monitor_combobox.setPlaceholderText('Select Monitor Type')
+        self.monitor_combobox.addItems(MONITORS.keys())
+        self.monitor_combobox.setCurrentText(self.monitor['name'])
+
+        self.form_layout.addRow("Active", self.active_checkbox)
+        self.form_layout.addRow("Monitor", self.monitor_combobox)
+        # Populate combobox and variables
+        self.monitorTypeChanged(self.monitor['name'])  # Make it draw the text boxes
+        for varname, value in self.monitor['variables'].items():  # Now add the items
+            self.variables_text[varname].setText(str(value))
+
+        self.monitor_combobox.currentTextChanged.connect(self.monitorTypeChanged)
+
+        self.layout.addLayout(self.form_layout)
+
+        self.buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+
+        self.layout.addWidget(self.buttons)
+
+
+    def getModifiedData(self):
+        monitorName = self.monitor_combobox.currentText()
+        ret = self.monitor.copy()
+        if monitorName not in MONITORS:
+            ret['active'] = False # We want to disable it if invalid
+            return ret
+        ret['active'] = self.active_checkbox.isChecked()
+        ret['name'] = self.monitor_combobox.currentText()
+        ret['type'] = MONITORS[monitorName]['type']
+        ret['values'] = MONITORS[monitorName]['values']
+        ret['variables'] = {}
+        for varname, type in MONITORS[monitorName]['variables'].items():
+            try:
+                ret['variables'][varname] = type(self.variables_text[varname].text())
+            except ValueError:
+                ret['variables'][varname] = None
+        return ret
+
+    def monitorTypeChanged(self, event):
+        for _, w in self.variables_text.items():
+            self.form_layout.removeRow(w)
+        self.variables_type = {}
+        self.variables_text = {}
+        if event in MONITORS:
+            self.current_monitor = event
+            obj = MONITORS[event]
+            col = 1
+            for varname, type in obj['variables'].items():
+                self.variables_type[varname] = type
+                self.variables_text[varname] = QtWidgets.QLineEdit()
+                self.variables_text[varname].setPlaceholderText(varname)
+                # self.main_layout.addWidget(QtWidgets.QLabel(varname), 0, col)
+                self.form_layout.addRow(varname, self.variables_text[varname])
+                col += 1
 
 class ActiveMonitorsWidget(QtWidgets.QWidget):
     monitorSignal = QtCore.pyqtSignal(dict)
-    monitorEdited = QtCore.pyqtSignal(dict)
+    monitorChange = QtCore.pyqtSignal(dict)
     widgetResize = QtCore.pyqtSignal()
     def __init__(self):
         super().__init__()
@@ -121,18 +193,17 @@ class ActiveMonitorsWidget(QtWidgets.QWidget):
 
         self.edit_btn = QtWidgets.QPushButton('Edit Monitor')
         self.remove_btn = QtWidgets.QPushButton('Remove Monitor')
+        self.edit_btn.clicked.connect(self.editBtnCallback)
         self.remove_btn.clicked.connect(self.removeBtnCallback)
         self.layout.addWidget(self.table_view)
         self.layout.addWidget(self.edit_btn)
         self.layout.addWidget(self.remove_btn)
         self.setLayout(self.layout)
 
-        # TODO: Implement this properly
-        self.edit_btn.setEnabled(False)
-        self.remove_btn.setEnabled(False)
+        self.edit_btn.setEnabled(True)
+        self.remove_btn.setEnabled(True)
 
         #self.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
-
 
     def resizeTableSections(self):
         """
@@ -146,13 +217,13 @@ class ActiveMonitorsWidget(QtWidgets.QWidget):
         total_width = self.table_view.verticalHeader().width() + 20  # Add 2 for border
         if self.table_view.verticalScrollBar().isVisible():
             total_width += self.table_view.verticalScrollBar().width()
-        print(total_width)
+        #print(total_width)
         for column in range(self.table.columnCount(QtCore.QModelIndex())):
             total_width += self.table_view.columnWidth(column)
-        print(total_width, self.table_view.width())
+        #print(total_width, self.table_view.width())
         self.table_view.setMinimumWidth(total_width)
-        self.table_view.resize(total_width, self.table_view.height())
         self.table_view.adjustSize()
+        self.table_view.resize(total_width, self.table_view.height())
 
         if self.table.columnCount(QtCore.QModelIndex()) > 0:
             self.table_view.horizontalHeader().setSectionResizeMode(0,
@@ -184,25 +255,76 @@ class ActiveMonitorsWidget(QtWidgets.QWidget):
     def removeBtnCallback(self, event):
         indexes = self.table_view.selectionModel().selectedRows()
         for index in sorted(indexes, reverse=True):
-            model = (self.table.data(index, Qt.DisplayRole))
-            logging.warning(f"Cannot remove {model} from here, that is currently unsupported.")
+            #model = (self.table.data(index, Qt.DisplayRole))
+            #logging.warning(f"Cannot remove {model} from here, that is currently unsupported.")
+            #obj = self.table._monitors[model]
+            obj = self.table.getMonitor(index)
+            obj['active'] = False
+            self.monitorChange.emit(obj)
+
 
     def editBtnCallback(self, event):
         indexes = self.table_view.selectionModel().selectedRows()
         for index in sorted(indexes, reverse=True):
-            model = (self.table.data(index, Qt.DisplayRole))
-            logging.warning(f"Cannot edit {model} from here, that is currently unsupported.")
+            #model = (self.table.data(index, Qt.DisplayRole))
+            #logging.warning(f"Cannot edit {model} from here, that is currently unsupported.")
+            #obj = self.table._monitors[model]
+            obj = self.table.getMonitor(index)
+            dialog = ActiveMonitorEdit(self, obj)
+            if dialog.exec_() == QtWidgets.QDialog.Accepted:
+                modified_obj = dialog.getModifiedData()
+                self.monitorChange.emit(modified_obj)
+
 
     def on_double_click(self, index):
         monitor = self.table.getMonitor(index)
         if monitor:
             logging.debug(f"Double clicked monitor {monitor['monitor']}")
+            obj = self.table.getMonitor(index)
+            dialog = ActiveMonitorEdit(self, obj)
+            if dialog.exec_() == QtWidgets.QDialog.Accepted:
+                modified_obj = dialog.getModifiedData()
+                self.monitorChange.emit(modified_obj)
+        else:
+            logging.warning(f"Cannot find monitor at double click index {index.row()}, {index.column()}")
+        if DEBUG_MODE:
+            print(self.exportMonitors())
 
-    def resizeEventBad(self, a0: QtGui.QResizeEvent) -> None:
-        super().resizeEvent(a0)
-        self.resizeTableSections()
-        #if self.table_view.horizontalScrollBar().isVisible():
-        #    self.resize(self.table_view.width(), self.height())
+
+    def exportMonitors(self):
+        monitors = self.table._monitors
+        ret = {}
+        for name, obj in monitors.items():
+            if not obj['active']:
+                logging.error("Attempted to export inactive monitor that should not have been in activeMonitorWidget: {name}")
+                continue
+            ret[name] = {
+                k:obj[k] for k in ['monitor', 'channel', 'subchannel', 'name', 'variables']
+            }
+        return ret
+
+    def importMonitors(self, monitor_infos):
+        """
+        imports monitors
+
+        :param monitor_infos: barebones like those generated from exportMonitor
+        :return:
+        """
+        monitors = []
+        for name, info in monitor_infos.items():
+            monitors.append({
+                'monitor': info['monitor'],
+                'channel': info['channel'],
+                'subchannel': info['subchannel'],
+                'active': True,
+                'type': MONITORS[info['name']]['type'],  # 'range' or 'fixed'
+                'name': info['name'],
+                'variables': info['variables'],  # tuple for range, value for fixed
+                'values': MONITORS[info['name']]['values'],
+            })
+        for monitor in monitors:
+            self.monitorChange.emit(monitor)
+
 
 
 if __name__ == "__main__":
@@ -216,6 +338,18 @@ if __name__ == "__main__":
     ]
     amw = ActiveMonitorsWidget()
     amw.show()
+    monitor_imports = {
+        'Channels:one':{'monitor': 'Channels:one', 'channel': 'Channels', 'subchannel': 'one',
+         'name': 'InRangeMonitor',
+         'variables': {'minimum': 0.1, 'maximum': 2}},
+         'CH1 P':{'monitor': 'CH1 P', 'channel': 'CH1 P', 'subchannel': None,
+          'name': 'InRangeMonitor',
+          'variables': {'minimum': 0.1, 'maximum': 2}},
+          'CH1 T':{'monitor': 'CH1 T', 'channel': 'CH1 T', 'subchannel': None,
+         'name': 'WhenOn',
+         'variables': {}},
+    }
+    amw.importMonitors(monitor_imports)
 
     class make_thread(QtCore.QThread):
         monitorSignal = QtCore.pyqtSignal(dict)

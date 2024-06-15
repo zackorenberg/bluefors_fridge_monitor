@@ -1,9 +1,5 @@
-import sys
-from PyQt5 import QtCore, QtGui, QtWidgets
-from localvars import *
-from GUI.monitorWidget import *
 from GUI.collapsibleBox import *
-from fileMonitor import *
+from Core.fileMonitor import *
 import queue
 
 change_queue = queue.Queue()
@@ -45,7 +41,6 @@ class QueueLogFileWatchdog(LogFileWatchdog):
 
 if __name__ == "__main__":
     import sys
-    import random
 
     current_date = datetime.now().strftime(DATE_FORMAT)
     overseer = Overseer(current_date)

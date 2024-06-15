@@ -1,12 +1,7 @@
 """
 Class that deals with log data
 """
-import os
-from localvars import *
-from fileReader import *
-from fileUtilities import *
-from fileMonitor import *
-from datetime import datetime
+from Core.fileMonitor import *
 
 from PyQt5 import QtCore
 
