@@ -204,8 +204,8 @@ class MonitorWidget(QtWidgets.QWidget):
     def resetSize(self):
         self.mainLayout.update()
         w = self.mainLayout.sizeHint().width()
-        #self.setMinimumWidth(w) this actually would work if the collapsableBox would resize as well!
-        self.setMaximumWidth(w)
+        self.setMinimumWidth(w) #this actually would work if the collapsableBox would resize as well!
+        #self.setMaximumWidth(w)
 
     def uiChangedCallback(self):
         #self.monitor_label.setText(self.monitor_label.text())

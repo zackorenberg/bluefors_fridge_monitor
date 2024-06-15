@@ -33,16 +33,23 @@ class MainApplication(QtWidgets.QMainWindow):
     widgetResize = QtCore.pyqtSignal()
     def __init__(self, log_path=LOG_PATH):
         super().__init__()
+        # Initialize the console widget and connect stdout to console to capture init prints
+        self.consoleWidget = ConsoleWidget()
+        stdout.printToConsole.connect(self.consoleWidget.printToConsole)
 
         self.fileManager = FileManager(log_path)
         self.monitorsWidget = MonitorsWidget()
         self.monitorManager = MonitorManager(self)
-        self.consoleWidget = ConsoleWidget()
         self.activeMonitorWidget = ActiveMonitorsWidget()
 
 
         self.mailer = Mailer(RECIPIENTS)
         self.values = self.fileManager.dumpData()
+
+
+        if SEND_TEST_EMAIL_ON_LAUNCH:
+            self.mailer.send_test(self.fileManager.currentStatus())
+
         self.monitorsWidget.init_ui(self.values)
 
         # connect file manager so we can process changes in monitorsWidget and check for alerts
@@ -60,8 +67,6 @@ class MainApplication(QtWidgets.QMainWindow):
         # Connect monitorsWidget to here so we can actually set up monitors
         self.monitorSignal.connect(self.monitorSignalCallback)
 
-        # connect stdout to console
-        stdout.printToConsole.connect(self.consoleWidget.printToConsole)
 
         # Add icon
         self.setWindowIcon(QtGui.QIcon('Resources/BlueforsIcon.ico'))

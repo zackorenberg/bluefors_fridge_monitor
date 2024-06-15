@@ -34,6 +34,9 @@ class BlueforsMonitor(QtWidgets.QWidget):
         self.mailer = Mailer(RECIPIENTS)
         self.values = self.fileManager.dumpData()
 
+        if SEND_TEST_EMAIL_ON_LAUNCH:
+            self.mailer.send_test(self.fileManager.currentStatus())
+
         self.collapsableBoxes = {}
         self.allMonitors = {}
 
@@ -288,8 +291,11 @@ if __name__ == "__main__":
     
     if os.path.exists('history.monitor'):
         with open('history.monitor', 'r') as f:
-            monitorHistory = json.load(f)
-            amw.importMonitors(monitorHistory)
+            try:
+                monitorHistory = json.load(f)
+                amw.importMonitors(monitorHistory)
+            except Exception as e:
+                logging.warning(f"Cannot load monitor history: {str(e)}")
     
     if DEBUG_MODE:
         amw.importMonitors(
@@ -305,9 +311,9 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Quitting program")
     exportedMonitors = amw.exportMonitors()
-    
-    with open('history.monitor', 'w') as f:
-        json.dump(exportedMonitors, f)
+    if len(exportedMonitors.keys()) > 0:
+        with open('history.monitor', 'w') as f:
+            json.dump(exportedMonitors, f)
     sys.exit(exitcode)
     # TODO: Add automatic memory of last monitors?
     # Can do it with

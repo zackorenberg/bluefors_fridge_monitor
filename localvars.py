@@ -68,6 +68,8 @@ MAX_COLLAPSEABLE_HEIGHT = 400
 FIX_CONSOLE_HEIGHT = True
 FIX_ACTIVE_WIDTH = True
 
+SEND_TEST_EMAIL_ON_LAUNCH = False
+
 SPLIT_MONITOR_WIDGETS = True # This will make it so monitor selector is left, active monitors are right, and console is full bottom
 # If false, monitor will be top left, console will be bottom left, and active monitor will be entirely right
 

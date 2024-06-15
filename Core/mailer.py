@@ -70,7 +70,7 @@ class Mailer:
         ])
         return triggered_monitors_str
 
-    def stringTabulatedDataDump(self, monitors, all_values):
+    def stringTabulatedDataDump(self, all_values):
         tabulated_data_dump_str = str(tabulate(
             sum([
                 [
@@ -90,7 +90,7 @@ class Mailer:
         subject = '[URGENT] BlueFors Alert Triggered!'
 
         triggered_monitors_str = self.stringTriggeredMonitors(monitors, all_values)
-        data_dump_str = self.stringTabulatedDataDump(monitors, all_values)
+        data_dump_str = self.stringTabulatedDataDump(all_values)
         if INDENT_EMAIL_INFORMATION:
             triggered_monitors_str = "\t" + "\n\t".join(triggered_monitors_str.split('\n'))
             data_dump_str = "\t" + "\n\t".join(data_dump_str.split('\n'))
