@@ -324,6 +324,6 @@ if __name__ == "__main__":
         w.load_monitors(fname='history.monitor')
         w.show()
         exitcode = w.app.exec()
-        w.export_monitors(fname='history.monitors')
+        w.export_monitors(fname='history.monitor')
         w.close_threads()
     sys.exit(exitcode)
