@@ -56,7 +56,8 @@ class LogChannel:
             self.data = self.data[-MAXIMUM_DATAPOINT_HISTORY:]
 
         last_time, last_data = get_last_entry(data, labels)
-
+        if last_time is None or last_data is None: # This might prevent the None,None error
+            return None, None
         self.last_time = last_time
         self.last_data = last_data
         return self.last_time, self.last_data
