@@ -1,5 +1,10 @@
+;Required values
 LOG_PATH=C:\Path\To\Log\Folder
 SENDER=email@address.com
 PASSWORD=emailpassword
 RECIPIENTS=recipient@email.com
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=465
 ;Can generate app passwords for gmail here: https://security.google.com/settings/security/apppasswords
+;
+;

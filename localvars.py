@@ -1,26 +1,35 @@
 CONFIG_FILE = 'config'
+CONFIG_MANDATORY_FIELDS = ['LOG_PATH', 'RECIPIENTS', 'SENDER', 'PASSWORD', 'SMTP_SERVER', 'SMTP_PORT']
+CONFIG_OPTIONAL_FIELDS = ['CHANNEL_BLACKLIST', 'VERBOSE', 'DEBUG_MODE']
 
-LOG_PATH = None
+LOG_PATH = ''
 CALIBRATION_PATH = None
-RECIPIENTS = None
-SENDER = None
-PASSWORD = None
+RECIPIENTS = []
+SENDER = ''
+PASSWORD = ''
+SMTP_SERVER = ''
+SMTP_PORT = -1
 
 # TODO: turn this into a class so can be dynamically changed with gui
+
 import os
 ROOT_DIR = os.path.dirname(__file__)
+"""
 with open(os.path.join(ROOT_DIR, CONFIG_FILE), 'r') as f:
     lines = f.readlines()
+    lines = [l for l in lines if l[0] != ';'] # Those are comments!
     # Set LOG_PATH
     try:
         LOG_PATH = [l.strip(' \n\t') for l in lines if 'LOG_PATH' in l][0].split('LOG_PATH=')[1]
         RECIPIENTS = [l.strip(' \n\t') for l in lines if 'RECIPIENTS' in l][0].split('RECIPIENTS=')[1].split(',')
         SENDER = [l.strip(' \n\t') for l in lines if 'SENDER' in l][0].split('SENDER=')[1]
         PASSWORD = [l.strip(' \n\t') for l in lines if 'PASSWORD' in l][0].split('PASSWORD=')[1]
+        SMTP_SERVER = [l.strip(' \n\t') for l in lines if 'SMTP_SERVER' in l][0].split('SMTP_SERVER=')[1]
+        SMTP_PORT = int([l.strip(' \n\t') for l in lines if 'SMTP_PORT' in l][0].split('SMTP_PORT=')[1])
     except KeyError:
         print("Invalid configuration file")
         exit(0)
-
+"""
 
 
 

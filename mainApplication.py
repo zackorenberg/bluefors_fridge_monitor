@@ -1,10 +1,20 @@
 from PyQt5 import QtWidgets
-from Core.fileManager import *
 
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtWidgets import QAction # This changes in PyQt6 so import individually
 
-from localvars import *
+import localvars
+from Core.configurationManager import ConfigurationManager, does_config_file_exist, refresh_all_modules
+if not does_config_file_exist():
+    # No configuration file!!! Do something
+    print("No configuration file found")
+    exit(0)
+
+config = ConfigurationManager()
+config.read_config_file()
+config.update_localvars()
+
+from Core.fileManager import *
 from Core.mailer import Mailer
 from Core.fileManager import FileManager
 from Core.monitorManager import MonitorManager
@@ -35,7 +45,7 @@ class MainApplication(QtWidgets.QMainWindow):
     monitorChange = QtCore.pyqtSignal(dict)
     widgetResize = QtCore.pyqtSignal()
     app = None # Where QApplication instance goes
-    def __init__(self, log_path=LOG_PATH):
+    def __init__(self, log_path=localvars.LOG_PATH):
         super().__init__()
         # Initialize the console widget and connect stdout to console to capture init prints
         self.consoleWidget = ConsoleWidget()
@@ -47,11 +57,11 @@ class MainApplication(QtWidgets.QMainWindow):
         self.activeMonitorWidget = ActiveMonitorsWidget()
 
 
-        self.mailer = Mailer(RECIPIENTS)
+        self.mailer = Mailer(localvars.RECIPIENTS)
         self.values = self.fileManager.dumpData()
 
 
-        if SEND_TEST_EMAIL_ON_LAUNCH:
+        if localvars.SEND_TEST_EMAIL_ON_LAUNCH:
             self.mailer.send_test(self.fileManager.currentStatus())
 
         self.monitorsWidget.init_ui(self.values)

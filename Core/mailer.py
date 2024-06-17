@@ -6,6 +6,7 @@ from email.mime.text import MIMEText
 import logger
 
 logging = logger.Logger(__file__)
+import localvars
 from localvars import *
 from tabulate import tabulate
 
@@ -32,22 +33,24 @@ Sincerely,
 BlueFors Fridge
 """
 
-def _send_email(subject, body, sender, recipients, password, smtp = 'smtp.gmail.com', smtp_port = 465):
+def _send_email(subject, body, sender, recipients, password, smtp_server, smtp_port):
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['From'] = sender
     msg['To'] = ', '.join(recipients)
-    with smtplib.SMTP_SSL(smtp, smtp_port) as smtp_server:
+    with smtplib.SMTP_SSL(smtp_server, smtp_port) as smtp_server:
        smtp_server.login(sender, password)
        smtp_server.sendmail(sender, recipients, msg.as_string())
     return True
 
 
 class Mailer:
-    def __init__(self, recipients, email=SENDER, password=PASSWORD):
+    def __init__(self, recipients, email=localvars.SENDER, password=localvars.PASSWORD, smtp_server=localvars.SMTP_SERVER, smtp_port=localvars.SMTP_PORT):
         self.recipients = recipients
         self.email = email
         self.password = password
+        self.smtp_server = smtp_server
+        self.smtp_port = smtp_port
 
 
     def stringTriggeredMonitors(self, monitors, all_values):
@@ -131,7 +134,9 @@ class Mailer:
                 body=text,
                 sender=self.email,
                 recipients=self.recipients,
-                password=self.password
+                password=self.password,
+                smtp_server=self.smtp_server,
+                smtp_port=self.smtp_port,
             )
         except Exception as e:
             logging.error(f"Failed to send email: {str(e)}")
