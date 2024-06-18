@@ -170,6 +170,7 @@ class MonitorWidget(QtWidgets.QWidget):
         if self.monitor_type.getMonitorType() not in MONITORS:
             self.checkbox.blockSignals(True)
             self.checkbox.setChecked(False)
+            self.checkbox.setCheckState(False)
             self.checkbox.blockSignals(False)
             return
         checked = self.checkbox.isChecked()
