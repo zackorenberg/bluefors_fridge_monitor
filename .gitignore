@@ -1,5 +1,6 @@
 *.log
 *.config
+*.monitor
 testEmails
 testEmails/*
 deprecatedCode
