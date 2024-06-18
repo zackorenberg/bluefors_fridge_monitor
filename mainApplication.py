@@ -165,18 +165,21 @@ class MainApplication(QtWidgets.QMainWindow):
         self.fileManager.wait()
 
     def checkMonitors(self, obj):
-        vals = self.monitorManager.checkMonitors(obj)
-        triggered = (self.monitorManager.WhatMonitorsTriggered(vals))
-        triggered_data = self.monitorManager.triggeredMonitorInfo(obj, triggered)
-        if len(vals.items()) and len(triggered):
-            logging.info(f"Alerts triggered: {', '.join([':'.join(x) if type(x) != str else x for x in triggered])}")
-        # if len(vals.items()):
-        #    print(vals)
-        if len(triggered) > 0:
-            print(f"Alerts triggered: {', '.join([':'.join(x) if type(x) != str else x for x in triggered])}")
-            # print(triggered_data)
-            self.mailer.send_alert(triggered_data, self.fileManager.currentStatus())
-
+        try:
+            vals = self.monitorManager.checkMonitors(obj)
+            triggered = (self.monitorManager.WhatMonitorsTriggered(vals))
+            triggered_data = self.monitorManager.triggeredMonitorInfo(obj, triggered)
+            if len(vals.items()) and len(triggered):
+                logging.info(f"Alerts triggered: {', '.join([':'.join(x) if type(x) != str else x for x in triggered])}")
+            # if len(vals.items()):
+            #    print(vals)
+            if len(triggered) > 0:
+                print(f"Alerts triggered: {', '.join([':'.join(x) if type(x) != str else x for x in triggered])}")
+                # print(triggered_data)
+                self.mailer.send_alert(triggered_data, self.fileManager.currentStatus())
+        except Exception as e:
+            logging.error(f"An error occured while checking monitors: {str(e)}")
+            print(f"{str(e)}:{traceback.format_exc()}")
         # print(self.fileManager.mostRecentChanges())
         # print(self.fileManager.currentStatus())
 

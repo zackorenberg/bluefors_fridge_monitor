@@ -99,12 +99,15 @@ class MonitorManager():
             if type(tup) != tuple:
                 tup = (tup, None)
             channel, subchannel = tup
+            if channel not in signaledValues:
+                logging.error(f"Monitor {channel if subchannel is None else channel+':'+subchannel} was triggered but can not find it in signaled values")
+                continue
             if channel not in ret:
                 ret[channel] = {}
             if subchannel:
                 ret[channel][subchannel] = {
-                    'currentValue':{t:v[subchannel] for t,v in signaledValues[channel].items()},
-                    'monitor':str(self.monitors[channel][subchannel]),
+                    'currentValue':{t:v[subchannel] for t,v in signaledValues[channel].items() if (t and v and subchannel in v)},
+                    'monitor':str(self.monitors[channel][subchannel]), # TODO: make extra safe?
                 }
             else:
                 ret[channel] = {
