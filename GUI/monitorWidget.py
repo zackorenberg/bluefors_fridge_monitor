@@ -170,7 +170,7 @@ class MonitorWidget(QtWidgets.QWidget):
         if self.monitor_type.getMonitorType() not in MONITORS:
             self.checkbox.blockSignals(True)
             self.checkbox.setChecked(False)
-            self.checkbox.setCheckState(False)
+            self.checkbox.setCheckState(QtCore.Qt.CheckState.Unchecked)
             self.checkbox.blockSignals(False)
             return
         checked = self.checkbox.isChecked()
@@ -229,6 +229,9 @@ class MonitorWidget(QtWidgets.QWidget):
         if obj['active'] != self.checkbox.checkState():
             self.checkbox.blockSignals(True)
             self.checkbox.setChecked(obj['active'])
+            self.checkbox.setCheckState(
+                QtCore.Qt.CheckState.Checked if obj['active'] else QtCore.Qt.CheckState.Unchecked
+            )
             self.checkbox.blockSignals(False)
 
         self.monitor_type.monitorStatusChange.emit(obj['active'])
