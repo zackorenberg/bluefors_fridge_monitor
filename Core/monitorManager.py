@@ -57,6 +57,9 @@ class MonitorManager():
             if channel in self.monitors:
                 ret[channel] = {}
                 for time, v in data.items():
+                    if time is None:
+                        logging.warning(f"{channel} had a change but did not read correctly")
+                        continue
                     if type(v) == dict:
                         for subchannel, value in v.items():
                             if subchannel in self.monitors[channel]:
@@ -66,11 +69,14 @@ class MonitorManager():
                                 else:
                                     ret[channel][subchannel] = monitorValue
                     else:
-                        monitorValue = self.monitors[channel][None].checkValue(v)
-                        if channel in ret:
-                            ret[channel] = ret[channel] or monitorValue
+                        if None in self.monitors[channel]:
+                            monitorValue = self.monitors[channel][None].checkValue(v)
+                            if channel in ret:
+                                ret[channel] = ret[channel] or monitorValue
+                            else:
+                                ret[channel] = monitorValue
                         else:
-                            ret[channel] = monitorValue
+                            logging.error(f"{channel} with subchannels had an invalid read")
         return ret
 
         """
