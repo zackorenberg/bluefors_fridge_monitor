@@ -2,7 +2,8 @@
 # Maybe I want to make it with tables? https://stackoverflow.com/questions/54385437/how-can-i-make-a-table-that-can-collapse-its-rows-into-categories-in-qt
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from localvars import *
+import localvars
+localvars.load_globals(localvars, globals())
 
 ANIMATION_DURATION = 50 #500
 class CollapsibleBox(QtWidgets.QWidget):

@@ -1,6 +1,9 @@
 """
 Class that deals with log data
 """
+import localvars
+localvars.load_globals(localvars,globals())
+
 from Core.fileMonitor import *
 
 from PyQt5 import QtCore
@@ -74,10 +77,11 @@ class LogChannel:
 class FileManager(QThread):
     processedChanges = QtCore.pyqtSignal(dict)
     allData = QtCore.pyqtSignal(dict)
-    def __init__(self, log_path=LOG_PATH):
+    def __init__(self, log_path):
         super().__init__()
+        self.log_path = log_path
         self.logChannels = {}
-        self.overseer = Overseer()
+        self.overseer = Overseer(log_path)
         self.overseer.changeSignal.connect(self.changeDetected)
         self.latest_log_files = load_all_possible_log_files(log_path)
         for channel, date in self.latest_log_files.items():
@@ -105,6 +109,7 @@ class FileManager(QThread):
         self._isRunning = True
         self.overseer.start()
         while self._isRunning:
+            print(self.log_path)
             logging.debug("Looping")
             if len(self.changes_read.keys()) > 0:
                 logging.debug("Pending changes emitting")

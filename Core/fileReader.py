@@ -1,5 +1,6 @@
 # Similar to log file reader program, but with more specific use cases
-from localvars import *
+import localvars
+localvars.load_globals(localvars, globals())
 import os
 from datetime import datetime
 

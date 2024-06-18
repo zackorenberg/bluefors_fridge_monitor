@@ -108,7 +108,7 @@ class MainApplication(QtWidgets.QMainWindow):
         # Add icon
         self.setWindowIcon(QtGui.QIcon(localvars.ICON_PATH))
         self.setWindowTitle("Bluefors Fridge Monitor")
-        if DEBUG_MODE:
+        if localvars.DEBUG_MODE:
             self.setWindowTitle("Bluefors Fridge Monitor (DEBUG)")
 
         # TODO: Add resizing event captures!
@@ -163,7 +163,7 @@ class MainApplication(QtWidgets.QMainWindow):
 
 
         # Add docks to main window
-        if SPLIT_MONITOR_WIDGETS:
+        if localvars.SPLIT_MONITOR_WIDGETS:
             # Monitor top left, Active monitor top right, Console bottom
             self.addDockWidget(QtCore.Qt.DockWidgetArea.TopDockWidgetArea, self.dock_monitorsWidget)
             self.addDockWidget(QtCore.Qt.DockWidgetArea.TopDockWidgetArea, self.dock_activeMonitorWidget)
@@ -180,12 +180,12 @@ class MainApplication(QtWidgets.QMainWindow):
             self.splitDockWidget(self.dock_monitorsWidget, self.dock_consoleWidget, QtCore.Qt.Orientation.Vertical)
 
         # deal with sizing:
-        if FIX_CONSOLE_HEIGHT:
+        if localvars.FIX_CONSOLE_HEIGHT:
             size = self.consoleWidget.sizeHint() # fix it? idr why I had this
             self.consoleWidget.consoleTextEdit.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
             self.consoleWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
             self.dock_consoleWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        if FIX_ACTIVE_WIDTH:
+        if localvars.FIX_ACTIVE_WIDTH:
             self.activeMonitorWidget.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
 
 

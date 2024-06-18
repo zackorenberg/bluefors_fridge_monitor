@@ -87,3 +87,12 @@ SPLIT_MONITOR_WIDGETS = True # This will make it so monitor selector is left, ac
 
 CHANGE_PROCESS_CHECK = 1 # Number of seconds between checking for changes (We do this instead of immediate processing because many files sometimes get modified concurrently and we want as accurate a result as possible when a monitor goes off
 ICON_PATH = 'Resources/BlueforsIcon.ico'
+
+def load_globals(module, global_dict):
+    attrs = []
+    for attr in dir(module):
+
+        if not attr[0] == '_' and attr.upper() == attr: # all uppercase
+            attrs.append(attr)
+            global_dict[attr] = getattr(module, attr)
+    return attrs

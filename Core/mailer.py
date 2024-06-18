@@ -7,7 +7,8 @@ import logger
 
 logging = logger.Logger(__file__)
 import localvars
-from localvars import *
+import localvars
+localvars.load_globals(localvars, globals())
 from tabulate import tabulate
 
 def _write_alert_email(triggered_monitors_str, data_dump_str):
