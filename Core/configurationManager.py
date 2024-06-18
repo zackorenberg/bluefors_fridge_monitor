@@ -3,6 +3,7 @@ import os
 import sys
 import importlib
 import logger
+import traceback
 logging = logger.Logger(__file__)
 
 def does_config_file_exist(config_file = localvars.CONFIG_FILE):
@@ -10,9 +11,15 @@ def does_config_file_exist(config_file = localvars.CONFIG_FILE):
 
 
 def refresh_all_modules():
-    for k,module in sys.modules.items():
-        print(k,module)
-        importlib.reload(module)
+    loaded_modules = list(sys.modules.items())
+    for k,module in loaded_modules:
+        if k[0] == '_' or any([s[0] == '_' for s in k.split('.')]): # iPython fix?
+            continue
+        try:
+            importlib.reload(module)
+        except Exception as e:
+            logging.debug(f"importlib.reload({k}) error: {str(e)}")
+            logging.debug(traceback.format_exc())
 
 
 class ConfigurationManager:
@@ -104,6 +111,22 @@ class ConfigurationManager:
                     value = ",".join([str(v) for v in self.values[field]])
                 f.write(f"{field}={str(value)}\n")
 
+    def set_config_value(self, **values):
+        for k,v in values.items():
+            if k not in self.mandatory_fields and k not in self.optional_fields:
+                logging.warning(f"There is no configuration field {k}")
+                continue
+            if not hasattr(localvars, k):
+                logging.error(f"localvars has no value {k}")
+                continue
+            if type(v) != type(getattr(localvars, k)):
+                logging.warning(f"Config value {k} has different type {type(v)} than {type(getattr(localvars,k))}")
+
+            # setattr(localvars, k, v) we set this later
+            self.values[k] = v
+            self.types[k] = type(v)
+            if k not in self.used_fields:
+                self.used_fields.append(k)
 
     def write_config_file_with_defaults(self, config_file = 'test.config'):
         if config_file is None:

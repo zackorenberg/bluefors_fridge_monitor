@@ -5,10 +5,34 @@ from PyQt5.QtWidgets import QAction # This changes in PyQt6 so import individual
 
 import localvars
 from Core.configurationManager import ConfigurationManager, does_config_file_exist, refresh_all_modules
+
 if not does_config_file_exist():
     # No configuration file!!! Do something
-    print("No configuration file found")
-    exit(0)
+    from GUI.configurationWidgets import NewConfigurationDialogue
+    import sys
+
+    app = QtWidgets.QApplication(sys.argv)
+    ncd = NewConfigurationDialogue()
+    ncd.setWindowTitle("Configuration")
+    ncd.setWindowIcon(QtGui.QIcon(localvars.ICON_PATH))
+    while True:
+        if ncd.exec() == QtWidgets.QDialog.Accepted:
+            try:
+                values = ncd.getValues()
+            except ValueError as e:
+                QtWidgets.QMessageBox.warning(
+                    ncd,
+                    "Invalid values",
+                    f"The following error(s) occured:\n {str(e)}"
+                )
+                continue
+        else:
+            continue
+        break # We got the values
+    del app # This was entirely standalone
+    config = ConfigurationManager()
+    config.set_config_value(**values)
+    config.write_config_file()
 
 config = ConfigurationManager()
 config.read_config_file()
@@ -50,7 +74,6 @@ class MainApplication(QtWidgets.QMainWindow):
         # Initialize the console widget and connect stdout to console to capture init prints
         self.consoleWidget = ConsoleWidget()
         stdout.printToConsole.connect(self.consoleWidget.printToConsole)
-
         self.fileManager = FileManager(log_path)
         self.monitorsWidget = MonitorsWidget()
         self.monitorManager = MonitorManager(self)
@@ -83,7 +106,7 @@ class MainApplication(QtWidgets.QMainWindow):
 
 
         # Add icon
-        self.setWindowIcon(QtGui.QIcon('Resources/BlueforsIcon.ico'))
+        self.setWindowIcon(QtGui.QIcon(localvars.ICON_PATH))
         self.setWindowTitle("Bluefors Fridge Monitor")
         if DEBUG_MODE:
             self.setWindowTitle("Bluefors Fridge Monitor (DEBUG)")
@@ -307,7 +330,7 @@ class MainApplication(QtWidgets.QMainWindow):
 
     def action_sendtestemail(self):
         self.mailer.send_test(self.fileManager.currentStatus())
-        logging.info("Test message sent!")
+        logging.info(f"Test message sent to {', '.join(self.mailer.recipients)}")
         print("Test email sent!")
 
     def action_reloadapplication(self):
@@ -327,7 +350,7 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     MainApplication.app = app
     while exitcode == RESTART_EXIT_CODE:
-        w = MainApplication()
+        w = MainApplication(log_path=localvars.LOG_PATH)
         #w.app = app
         w.init_ui()
         w.init_threads()
@@ -336,4 +359,7 @@ if __name__ == "__main__":
         exitcode = w.app.exec()
         w.export_monitors(fname='history.monitor')
         w.close_threads()
+        refresh_all_modules()
+        config.read_config_file()
+        config.update_localvars()
     sys.exit(exitcode)
