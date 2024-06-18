@@ -77,7 +77,7 @@ class LogChannel:
 class FileManager(QThread):
     processedChanges = QtCore.pyqtSignal(dict)
     allData = QtCore.pyqtSignal(dict)
-    def __init__(self, log_path):
+    def __init__(self, log_path = LOG_PATH):
         super().__init__()
         self.log_path = log_path
         self.logChannels = {}
@@ -109,7 +109,6 @@ class FileManager(QThread):
         self._isRunning = True
         self.overseer.start()
         while self._isRunning:
-            print(self.log_path)
             logging.debug("Looping")
             if len(self.changes_read.keys()) > 0:
                 logging.debug("Pending changes emitting")

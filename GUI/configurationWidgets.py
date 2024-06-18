@@ -131,6 +131,69 @@ class _EmailForm(QtWidgets.QWidget):
         emails = self.get_emails()
         return emails if len(emails) > 0 else None
 
+class _BlockedChannels(QtWidgets.QWidget):
+    """
+        ListView widget, data MUST have type!
+
+        must have getValue and setValue and save and changeConfigFile attributes!
+        """
+
+    def __init__(self, parent=None, **kwargs):
+        super().__init__(parent=parent, **kwargs)
+
+
+        self.options = []
+        self.values = []
+
+        # listview stuff for widgets
+        self.listview = QtWidgets.QListView(self)
+        self.model = QtCore.QStandardItemModel()
+        self.listview.setModel(self.model)
+
+
+        self.layout = QtGui.QHBoxLayout(self)
+        self.layout.addWidget(self.op_label)
+        self.layout.addWidget(self.listview)
+        self.setLayout(self.layout)
+
+    def refresh_listview(self):
+        self.model.clear()
+        for option in self.options:
+            item = QtCore.QStandardItem(option)
+            item.setData(option)
+            item.setCheckable(True)
+            item.setEditable(False)
+            check = (QtCore.Qt.Checked \
+                         if option in self.values \
+                         else QtCore.Qt.Unchecked
+                     )  # for no partials!
+            item.setCheckState(check)
+            item.setChecked(check)
+            self.model.appendRow(item)
+
+    def setOptions(self, options):
+        if type(options) != list:
+            options = list(options)
+        self.options = options
+        self.refresh_listview()
+
+    def setValue(self, value):
+        if type(value) != list:
+            value = list(value)
+        self.current = value
+
+        self.refresh_listview()
+
+    def getValue(self):
+        selected_channels = []
+        for i in range(self.model.rowCount()):
+            item = self.model.item(i)
+            if item.checkState() == QtCore.Qt.Checked:
+                selected_channels.append(item.data())
+        self.current = selected_channels
+        return
+
+
 # Very simple form that has required values only
 class NewConfigurationWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
@@ -145,9 +208,9 @@ class NewConfigurationWidget(QtWidgets.QWidget):
 
         for field in self.fields:
             if field in localvars.CONFIG_MANDATORY_FIELDS:
-                if field in localvars.CONFIG_MANDATORY_FIELDS_DIRECTORY:
+                if field in localvars.CONFIGTYPE_FIELDS_DIRECTORY:
                     self.widgets[field] = _DirectoryBrowseWidget(self.labels[field])
-                elif field in localvars.CONFIG_MANDATORY_FIELDS_EMAILS:
+                elif field in localvars.CONFIGTYPE_FIELDS_EMAIL:
                     self.widgets[field] = _EmailForm(self.labels[field])
                 else:
                     self.widgets[field] = QtWidgets.QLineEdit()
@@ -201,8 +264,77 @@ class NewConfigurationDialogue(QtWidgets.QDialog):
         self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(self.newConfigurationWidget.checkValidity())
 
 class ConfigurationWidget(QtWidgets.QWidget):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.mandatory_fields = localvars.CONFIG_MANDATORY_FIELDS
+        self.optional_fields = localvars.CONFIG_OPTIONAL_FIELDS
+        self.fields = self.mandatory_fields + self.optional_fields
+
+        self.labels = {f: " ".join(f.split("_")).title() for f in self.fields}
+        self.types = {f: type(getattr(localvars, f)) for f in self.fields}
+        self.widgets = {}
+
+        self.main_layout = QtWidgets.QVBoxLayout()
+        self.mandatory_layout = QtWidgets.QFormLayout()
+        self.optional_layout = QtWidgets.QFormLayout()
+
+        for field in self.mandatory_fields:
+            if field in localvars.CONFIGTYPE_FIELDS_DIRECTORY:
+                self.widgets[field] = _DirectoryBrowseWidget(self.labels[field])
+            elif field in localvars.CONFIGTYPE_FIELDS_EMAIL:
+                self.widgets[field] = _EmailForm(self.labels[field])
+            else:
+                self.widgets[field] = QtWidgets.QLineEdit()
+                self.widgets[field].setPlaceholderText(self.labels[field])
+            self.mandatory_layout.addRow(
+                self.labels[field],
+                self.widgets[field],
+            )
+
+        for field in self.optional_fields:
+            if field in localvars.CONFIGTYPE_FIELDS_DIRECTORY:
+                self.widgets[field] = _DirectoryBrowseWidget(self.labels[field])
+            elif field in localvars.CONFIGTYPE_FIELDS_EMAIL:
+                self.widgets[field] = _EmailForm(self.labels[field])
+            elif type(getattr(localvars, field)) == list:
+                self.widgets[field] = _BlockedChannels(self)
+                self.widgets[field].setValue(getattr(localvars,field))
+            elif type(getattr(localvars, field)) == bool:
+                self.widgets[field] = QtWidgets.QCheckBox()
+                self.widgets[field].setChecked(getattr(localvars, field))
+            else:
+                self.widgets[field] = QtWidgets.QLineEdit()
+                self.widgets[field].setPlaceholderText(self.labels[field])
+            self.optional_layout.addRow(
+                self.labels[field],
+                self.widgets[field],
+            )
+        #self.setLayout(self.optional_layout)
+        mandatory_widget = QtWidgets.QScrollArea()
+        mandatory_widget.setLayout(self.mandatory_layout)
+        optional_widget = QtWidgets.QScrollArea()
+        optional_widget.setLayout(self.optional_layout)
+        self.main_layout.addWidget(mandatory_widget)
+        self.main_layout.addWidget(optional_widget)
+        self.setLayout(self.main_layout)
+
+    def getValues(self):
+        ret = {}
+        errors = []
+        for field in self.fields:
+            try:
+                if hasattr(self.widgets[field], 'getValue'):
+                    ret[field] = self.types[field](self.widgets[field].getValue())
+                else:
+                    ret[field] = self.types[field](self.widgets[field].text())
+            except ValueError as e:
+                errors.append(f"{self.labels[field]} must be of type {str(self.types[field])}: {str(e)}")
+        if len(errors) > 0:
+            raise ValueError("\n".join(errors))
+        return ret
+
+
 
 
 

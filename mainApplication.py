@@ -325,6 +325,11 @@ class MainApplication(QtWidgets.QMainWindow):
             print(f"Current monitors saved to {file_name}")
 
     def action_editconfig(self):
+        from GUI.configurationWidgets import ConfigurationWidget
+        cw = ConfigurationWidget(self)
+        cw.show()
+        #v = cw.exec()
+        print(v)
         print("Currently unsupported, you must manually edit config file restart")
         pass
 
@@ -359,7 +364,8 @@ if __name__ == "__main__":
         exitcode = w.app.exec()
         w.export_monitors(fname='history.monitor')
         w.close_threads()
-        refresh_all_modules()
-        config.read_config_file()
-        config.update_localvars()
+        if exitcode == RESTART_EXIT_CODE:
+            refresh_all_modules()
+            config.read_config_file()
+            config.update_localvars()
     sys.exit(exitcode)
