@@ -61,6 +61,8 @@ class BlueforsMonitor(QtWidgets.QWidget):
 
         for ch_type, channels in MONITOR_CHANNELS.items():
             for channel in channels:
+                if channel in CHANNEL_BLACKLIST:
+                    continue
                 try:
                     t, value = sorted(self.values[channel], key=lambda x: x[0])[-1]
                 except Exception as e:
@@ -78,6 +80,8 @@ class BlueforsMonitor(QtWidgets.QWidget):
             self.collapsableBoxes[ch_type].collapseChangeState.connect(self.widgetResize)
             layout = QtWidgets.QVBoxLayout()
             for channel in channels:
+                if channel in CHANNEL_BLACKLIST:
+                    continue
                 self.allMonitors[channel] = {} # Can be overwritten
                 #print(self.values.keys())
                 try:
