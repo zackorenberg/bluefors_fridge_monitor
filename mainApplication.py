@@ -7,7 +7,7 @@ import localvars
 from Core.configurationManager import ConfigurationManager, does_config_file_exist, refresh_all_modules
 from itertools import zip_longest
 
-if not does_config_file_exist() or True:
+if not does_config_file_exist():
     # No configuration file!!! Do something
     from GUI.configurationWidgets import NewConfigurationDialogue
     import sys
