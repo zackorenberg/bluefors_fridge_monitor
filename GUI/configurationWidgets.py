@@ -86,8 +86,9 @@ class _EmailForm(QtWidgets.QWidget):
         self.remove_button.clicked.connect(self.remove_email)
         # Do it in function instead self.email_input.returnPressed.connect(self.add_email)
 
-    def add_email(self):
-        email = self.email_input.text()
+    def add_email(self, email=None):
+        if email is None:
+            email = self.email_input.text()
         if email:
             if '@' in email and '.' in email:  # Simple email validation
                 emails = self.model.stringList()
@@ -124,8 +125,20 @@ class _EmailForm(QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, 'No Selection', 'Please select an email address to remove.')
         self.textChanged.emit()
 
+    def remove_emails(self):
+        self.model.setStringList([])
+
     def get_emails(self):
         return self.model.stringList()
+
+    def getValue(self):
+        return self.get_emails()
+
+    def setValue(self, values):
+        # First remove all
+        self.remove_emails()
+        for email in values:
+            self.add_email(email)
 
     def text(self):
         emails = self.get_emails()
@@ -141,25 +154,25 @@ class _BlockedChannels(QtWidgets.QWidget):
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent=parent, **kwargs)
 
-
-        self.options = []
+        self.all_channels = sum([v for k,v in localvars.MONITOR_CHANNELS.items()],[])
+        self.options = sorted(self.all_channels)
         self.values = []
 
         # listview stuff for widgets
         self.listview = QtWidgets.QListView(self)
-        self.model = QtCore.QStandardItemModel()
+        self.model = QtGui.QStandardItemModel()
         self.listview.setModel(self.model)
 
 
-        self.layout = QtGui.QHBoxLayout(self)
-        self.layout.addWidget(self.op_label)
+        self.layout = QtWidgets.QHBoxLayout(self)
         self.layout.addWidget(self.listview)
+        self.layout.setContentsMargins(0,0,0,0)
         self.setLayout(self.layout)
 
     def refresh_listview(self):
         self.model.clear()
         for option in self.options:
-            item = QtCore.QStandardItem(option)
+            item = QtGui.QStandardItem(option)
             item.setData(option)
             item.setCheckable(True)
             item.setEditable(False)
@@ -168,19 +181,21 @@ class _BlockedChannels(QtWidgets.QWidget):
                          else QtCore.Qt.Unchecked
                      )  # for no partials!
             item.setCheckState(check)
-            item.setChecked(check)
             self.model.appendRow(item)
 
     def setOptions(self, options):
         if type(options) != list:
             options = list(options)
-        self.options = options
+        self.options = sorted(options)
         self.refresh_listview()
 
     def setValue(self, value):
         if type(value) != list:
             value = list(value)
-        self.current = value
+        self.values = value
+        new_options = [v for v in value if v not in self.options]
+        if len(new_options) > 0:
+            self.options = sorted(self.options + new_options)
 
         self.refresh_listview()
 
@@ -190,8 +205,7 @@ class _BlockedChannels(QtWidgets.QWidget):
             item = self.model.item(i)
             if item.checkState() == QtCore.Qt.Checked:
                 selected_channels.append(item.data())
-        self.current = selected_channels
-        return
+        return selected_channels
 
 
 # Very simple form that has required values only
@@ -203,7 +217,6 @@ class NewConfigurationWidget(QtWidgets.QWidget):
         self.labels = {f:" ".join(f.split("_")).title() for f in self.fields}
         self.types = {f:type(getattr(localvars, f)) for f in self.fields}
         self.widgets = {}
-
         self.main_layout = QtWidgets.QFormLayout()
 
         for field in self.fields:
@@ -253,6 +266,9 @@ class NewConfigurationDialogue(QtWidgets.QDialog):
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
         self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
+        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setText("Save")
+        self.button_box.button(QtWidgets.QDialogButtonBox.Cancel).setText("Quit")
+
 
         self.main_layout.addWidget(self.button_box)
         self.setLayout(self.main_layout)
@@ -311,9 +327,9 @@ class ConfigurationWidget(QtWidgets.QWidget):
                 self.widgets[field],
             )
         #self.setLayout(self.optional_layout)
-        mandatory_widget = QtWidgets.QScrollArea()
+        mandatory_widget = QtWidgets.QGroupBox("Configuration")
         mandatory_widget.setLayout(self.mandatory_layout)
-        optional_widget = QtWidgets.QScrollArea()
+        optional_widget = QtWidgets.QGroupBox("Settings")
         optional_widget.setLayout(self.optional_layout)
         self.main_layout.addWidget(mandatory_widget)
         self.main_layout.addWidget(optional_widget)
@@ -324,7 +340,9 @@ class ConfigurationWidget(QtWidgets.QWidget):
         errors = []
         for field in self.fields:
             try:
-                if hasattr(self.widgets[field], 'getValue'):
+                if type(self.widgets[field]) == QtWidgets.QCheckBox:
+                    ret[field] = self.widgets[field].isChecked()
+                elif hasattr(self.widgets[field], 'getValue'):
                     ret[field] = self.types[field](self.widgets[field].getValue())
                 else:
                     ret[field] = self.types[field](self.widgets[field].text())
@@ -334,7 +352,43 @@ class ConfigurationWidget(QtWidgets.QWidget):
             raise ValueError("\n".join(errors))
         return ret
 
+    def setValues(self, values):
+        for field, value in values.items():
+            if field not in self.widgets:
+                print(f"Invalid field {field}")
+            if hasattr(self.widgets[field], 'setValue'):
+                self.widgets[field].setValue(value)
+            elif type(self.widgets[field]) == QtWidgets.QLineEdit:
+                self.widgets[field].setText(str(value))
+            elif type(self.widgets[field]) == QtWidgets.QCheckBox:
+                if type(value) != bool:
+                    print(f"Invalid checkbox field {field} {value}")
+                self.widgets[field].setChecked(value)
+            else:
+                print(f"Dont know what to do with {field} {value}")
 
+class ConfigurationDialogue(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+        self.configurationWidget = ConfigurationWidget(self)
+        self.main_layout = QtWidgets.QVBoxLayout()
+        self.main_layout.addWidget(self.configurationWidget)
+        self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setText("Save")
+
+        self.main_layout.addWidget(self.button_box)
+        self.setLayout(self.main_layout)
+
+    def setValues(self, values):
+        self.configurationWidget.setValues(values)
+
+    def getValues(self):
+        return self.configurationWidget.getValues()
+
+    def checkValidity(self):
+        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(self.configurationWidget.checkValidity())
 
 
 
@@ -342,6 +396,8 @@ class ConfigurationWidget(QtWidgets.QWidget):
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
-    ncw = NewConfigurationWidget()
-    ncw.show()
+    #ncw = ConfigurationWidget()
+    ncw = ConfigurationDialogue()
+    #ncw.show()
+    print(ncw.exec())
     app.exec()

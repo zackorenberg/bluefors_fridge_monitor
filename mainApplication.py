@@ -5,8 +5,9 @@ from PyQt5.QtWidgets import QAction # This changes in PyQt6 so import individual
 
 import localvars
 from Core.configurationManager import ConfigurationManager, does_config_file_exist, refresh_all_modules
+from itertools import zip_longest
 
-if not does_config_file_exist():
+if not does_config_file_exist() or True:
     # No configuration file!!! Do something
     from GUI.configurationWidgets import NewConfigurationDialogue
     import sys
@@ -16,7 +17,7 @@ if not does_config_file_exist():
     ncd.setWindowTitle("Configuration")
     ncd.setWindowIcon(QtGui.QIcon(localvars.ICON_PATH))
     while True:
-        if ncd.exec() == QtWidgets.QDialog.Accepted:
+        if (ncd_code := ncd.exec()) == QtWidgets.QDialog.DialogCode.Accepted:
             try:
                 values = ncd.getValues()
             except ValueError as e:
@@ -26,6 +27,8 @@ if not does_config_file_exist():
                     f"The following error(s) occured:\n {str(e)}"
                 )
                 continue
+        elif ncd_code == QtWidgets.QDialog.DialogCode.Rejected:
+            sys.exit(0)
         else:
             continue
         break # We got the values
@@ -328,21 +331,62 @@ class MainApplication(QtWidgets.QMainWindow):
             print(f"Current monitors saved to {file_name}")
 
     def action_editconfig(self):
-        from GUI.configurationWidgets import ConfigurationWidget
-        cw = ConfigurationWidget(self)
-        cw.show()
-        #v = cw.exec()
-        print(v)
-        print("Currently unsupported, you must manually edit config file restart")
-        pass
+        from GUI.configurationWidgets import ConfigurationDialogue
+
+        cw = ConfigurationDialogue()
+        cw.setValues(
+            config.read_localvars()
+        )
+        changes = {}
+        while cw.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+            try:
+                values = cw.getValues()
+            except ValueError as e:
+                QtWidgets.QMessageBox.warning(
+                    ncd,
+                    "Invalid values",
+                    f"The following error(s) occured:\n {str(e)}"
+                )
+                continue
+
+            # Now get all the values
+            try:
+                changes = {}
+                for k,v in values.items():
+                    existing_value = getattr(localvars, k)
+                    if type(existing_value) != type(v):
+                        print(f"Error: {k} does not have the right type")
+                    if type(v) == list:
+                        is_same = all([a==b for a,b in zip_longest(sorted(existing_value),sorted(v),fillvalue=float('nan'))])
+                    else:
+                        is_same = (existing_value == v)
+                    if not is_same: # this is a new change
+                        changes[k] = v
+            except Exception as e:
+                QtWidgets.QMessageBox.warning(
+                    ncd,
+                    "Unknown error",
+                    f"The following error occured:\n {str(e)}"
+                )
+                continue
+            break
+        if len(changes.items()) > 0:
+            logging.info(f"Saving the following configuration changes: {', '.join([f'{k}={v}' for k,v in changes.items()])}")
+            config.set_config_value(**changes)
+            config.update_localvars()
+            config.write_config_file()
+            QtWidgets.QMessageBox.information(
+                self,
+                "Configuration Saved",
+                "Configuration changes have been saved. Restarting now",
+            )
+            self.action_restartapplication()
 
     def action_sendtestemail(self):
         self.mailer.send_test(self.fileManager.currentStatus())
         logging.info(f"Test message sent to {', '.join(self.mailer.recipients)}")
         print("Test email sent!")
 
-    def action_reloadapplication(self):
-        pass
 
     def action_restartapplication(self):
         if self.app:

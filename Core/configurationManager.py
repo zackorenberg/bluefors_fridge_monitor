@@ -150,6 +150,13 @@ class ConfigurationManager:
         for field, value in self.values.items():
             setattr(localvars, field, value)
 
+    def read_localvars(self):
+        ret = {}
+        for field in self.mandatory_fields:
+            ret[field] = getattr(localvars, field)
+        for field in self.optional_fields:
+            ret[field] = getattr(localvars, field)
+        return ret
 
 
 if __name__ == "__main__":

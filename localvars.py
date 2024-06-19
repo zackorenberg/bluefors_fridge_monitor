@@ -55,7 +55,7 @@ SUFFIX_FORMAT = "%y-%m-%d.log"
 DATE_FORMAT = "%y-%m-%d"
 TIME_FORMAT = "%H:%M:%S"
 
-THERMOMETRY_CHANNELS = [f'CH{d+1} T' for d in range(7)] + [f'CH{d+1} R' for d in range(7)] +[f'CH{d+1} P' for d in range(7)]
+THERMOMETRY_CHANNELS = [f'CH{d+1} T' for d in range(16)] + [f'CH{d+1} R' for d in range(16)] +[f'CH{d+1} P' for d in range(16)]
 
 VALVE_CHANNELS = ['Channels']
 PRESSURE_CHANNELS = ['Flowmeter', 'maxigauge']
