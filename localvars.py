@@ -1,9 +1,3 @@
-CONFIG_FILE = 'config'
-CONFIG_MANDATORY_FIELDS = ['LOG_PATH', 'RECIPIENTS', 'SENDER', 'PASSWORD', 'SMTP_SERVER', 'SMTP_PORT']
-CONFIG_OPTIONAL_FIELDS = ['CHANNEL_BLACKLIST', 'VERBOSE', 'DEBUG_MODE']
-
-CONFIGTYPE_FIELDS_DIRECTORY = ['LOG_PATH']
-CONFIGTYPE_FIELDS_EMAIL = ['RECIPIENTS']
 
 LOG_PATH = ''
 CALIBRATION_PATH = None
@@ -84,6 +78,16 @@ SEND_TEST_EMAIL_ON_LAUNCH = False
 
 SPLIT_MONITOR_WIDGETS = True # This will make it so monitor selector is left, active monitors are right, and console is full bottom
 # If false, monitor will be top left, console will be bottom left, and active monitor will be entirely right
+
+CONFIG_FILE = 'config'
+CONFIG_MANDATORY_FIELDS = ['LOG_PATH', 'RECIPIENTS', 'SENDER', 'PASSWORD', 'SMTP_SERVER', 'SMTP_PORT']
+CONFIG_OPTIONAL_FIELDS = ['CHANNEL_BLACKLIST', 'VERBOSE', 'DEBUG_MODE']
+
+CONFIGTYPE_FIELDS_DIRECTORY = ['LOG_PATH']
+CONFIGTYPE_FIELDS_EMAIL = ['RECIPIENTS']
+
+CONFIG_MAILER_FIELDS = ['RECIPIENTS', 'SENDER', 'PASSWORD', 'SMTP_SERVER', 'SMTP_PORT']
+
 
 CHANGE_PROCESS_CHECK = 1 # Number of seconds between checking for changes (We do this instead of immediate processing because many files sometimes get modified concurrently and we want as accurate a result as possible when a monitor goes off
 ICON_PATH = 'Resources/BlueforsIcon.ico'

@@ -158,6 +158,13 @@ class ConfigurationManager:
             ret[field] = getattr(localvars, field)
         return ret
 
+    def read_localvars_fields(self, fields):
+        ret = {}
+        for field in fields:
+            assert(hasattr(localvars, field))
+            ret[field] = getattr(localvars, field)
+        return ret
+
 
 if __name__ == "__main__":
     os.chdir(localvars.ROOT_DIR)

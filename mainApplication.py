@@ -272,11 +272,21 @@ class MainApplication(QtWidgets.QMainWindow):
             QtWidgets.QStyle.StandardPixmap.SP_DialogSaveButton
         ))
         save_monitors.triggered.connect(self.action_savemonitors)
+        quit_action = QAction(
+            "Quit",
+            self
+        )
+        quit_action.triggered.connect(self.action_quit)
         edit_configuration = QAction(
             "Edit configuration",
             self
         )
         edit_configuration.triggered.connect(self.action_editconfig)
+        edit_email_settings = QAction(
+            "Email Settings",
+            self
+        )
+        edit_email_settings.triggered.connect(self.action_editmailerconfig)
         send_test_email = QAction(
             "Send Test Email",
             self
@@ -289,7 +299,11 @@ class MainApplication(QtWidgets.QMainWindow):
         send_test_email.triggered.connect(self.action_sendtestemail)
         file_menu.addAction(save_monitors)
         file_menu.addAction(load_monitors)
+        file_menu.addSeparator()
+        file_menu.addAction(quit_action)
         edit_menu.addAction(edit_configuration)
+        edit_menu.addSeparator()
+        edit_menu.addAction(edit_email_settings)
         tools_menu.addAction(send_test_email)
         tools_menu.addSeparator()
         tools_menu.addAction(restart_app)
@@ -337,6 +351,8 @@ class MainApplication(QtWidgets.QMainWindow):
         cw.setValues(
             config.read_localvars()
         )
+        cw.setWindowTitle("Edit Configuration")
+        cw.setWindowIcon(QtGui.QIcon(localvars.ICON_PATH))
         changes = {}
         while cw.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             try:
@@ -382,6 +398,68 @@ class MainApplication(QtWidgets.QMainWindow):
             )
             self.action_restartapplication()
 
+    def action_editmailerconfig(self):
+        from GUI.configurationWidgets import EmailConfigurationDialogue
+
+        cw = EmailConfigurationDialogue()
+        cw.setValues(
+            config.read_localvars_fields(localvars.CONFIG_MAILER_FIELDS)
+        )
+        cw.setWindowTitle("Email Settings")
+        cw.setWindowIcon(QtGui.QIcon(localvars.ICON_PATH))
+        changes = {}
+        while cw.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+            try:
+                values = cw.getValues()
+            except ValueError as e:
+                QtWidgets.QMessageBox.warning(
+                    ncd,
+                    "Invalid values",
+                    f"The following error(s) occured:\n {str(e)}"
+                )
+                continue
+
+            # Now get all the values
+            try:
+                changes = {}
+                for k,v in values.items():
+                    existing_value = getattr(localvars, k)
+                    if type(existing_value) != type(v):
+                        print(f"Error: {k} does not have the right type")
+                    if type(v) == list:
+                        is_same = all([a==b for a,b in zip_longest(sorted(existing_value),sorted(v),fillvalue=float('nan'))])
+                    else:
+                        is_same = (existing_value == v)
+                    if not is_same: # this is a new change
+                        changes[k] = v
+            except Exception as e:
+                QtWidgets.QMessageBox.warning(
+                    ncd,
+                    "Unknown error",
+                    f"The following error occured:\n {str(e)}"
+                )
+                continue
+            break
+        if len(changes.items()) > 0:
+            logging.info(f"Saving the following mailer changes: {', '.join([f'{k}={v}' for k,v in changes.items()])}")
+            config.set_config_value(**changes)
+            config.update_localvars()
+            config.write_config_file()
+            # Now we update the mailer
+            for k,v in changes.items():
+                if not hasattr(self.mailer, k.lower()):
+                    logging.error(f"Mailer does not have attribute {k.lower()}")
+                else:
+                    setattr(self.mailer, k.lower(), v)
+            send_test_email = QtWidgets.QMessageBox.question(
+                self,
+                "Email Settings Saved",
+                "Email settings have been saved. Would you like to send a test email?",
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+            )
+            if send_test_email == QtWidgets.QMessageBox.StandardButton.Yes:
+                self.action_sendtestemail()
+
     def action_sendtestemail(self):
         self.mailer.send_test(self.fileManager.currentStatus())
         logging.info(f"Test message sent to {', '.join(self.mailer.recipients)}")
@@ -395,6 +473,32 @@ class MainApplication(QtWidgets.QMainWindow):
         else:
             self.close()
             QtWidgets.QApplication.exit(RESTART_EXIT_CODE)
+
+    def closeEvent(self, a0: QtGui.QCloseEvent = None) -> None:
+        reply = QtWidgets.QMessageBox.question(self, 'Quit',
+                                           "Are you sure you want to quit?", QtWidgets.QMessageBox.Yes,
+                                           QtWidgets.QMessageBox.No)
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            a0.accept()
+
+    def quit(self, exit_code=0):
+        if self.app:
+            self.close()
+            self.app.exit(exit_code)
+        else:
+            self.close()
+            QtWidgets.QApplication.exit(exit_code)
+
+    def action_quit(self):
+        reply = QtWidgets.QMessageBox.question(self, 'Quit',
+                                               "Are you sure you want to quit?", QtWidgets.QMessageBox.Yes,
+                                               QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.closeEvent = super().closeEvent
+            self.quit()
+
+
 
 
 if __name__ == "__main__":

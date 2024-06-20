@@ -391,6 +391,94 @@ class ConfigurationDialogue(QtWidgets.QDialog):
         self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(self.configurationWidget.checkValidity())
 
 
+class EmailConfigurationWidget(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.fields = localvars.CONFIG_MAILER_FIELDS
+        self.labels = {f:" ".join(f.split("_")).title() for f in self.fields}
+        self.types = {f:type(getattr(localvars, f)) for f in self.fields}
+        self.widgets = {}
+        self.main_layout = QtWidgets.QFormLayout()
+
+        for field in self.fields:
+            if field in localvars.CONFIGTYPE_FIELDS_DIRECTORY: # None right now but may add feature to save email locally
+                self.widgets[field] = _DirectoryBrowseWidget(self.labels[field])
+            elif field in localvars.CONFIGTYPE_FIELDS_EMAIL:
+                self.widgets[field] = _EmailForm(self.labels[field])
+            else:
+                self.widgets[field] = QtWidgets.QLineEdit()
+                self.widgets[field].setPlaceholderText(self.labels[field])
+            self.main_layout.addRow(
+                self.labels[field],
+                self.widgets[field],
+            )
+        self.setLayout(self.main_layout)
+
+    def getValues(self):
+        ret = {}
+        errors = []
+        for field in self.fields:
+            try:
+                ret[field] = self.types[field](self.widgets[field].text())
+            except ValueError as e:
+                errors.append(f"{self.labels[field]} must be of type {str(self.types[field])}: {str(e)}")
+        if len(errors) > 0:
+            raise ValueError("\n".join(errors))
+        return ret
+
+    def setValues(self, values):
+        for field, value in values.items():
+            if field not in self.widgets:
+                print(f"Invalid field {field}")
+            if hasattr(self.widgets[field], 'setValue'):
+                self.widgets[field].setValue(value)
+            elif type(self.widgets[field]) == QtWidgets.QLineEdit:
+                self.widgets[field].setText(str(value))
+            elif type(self.widgets[field]) == QtWidgets.QCheckBox:
+                if type(value) != bool:
+                    print(f"Invalid checkbox field {field} {value}")
+                self.widgets[field].setChecked(value)
+            else:
+                print(f"Dont know what to do with {field} {value}")
+
+    def checkValidity(self):
+        for field in self.fields:
+            if hasattr(self.widgets[field], 'text'):
+                if self.widgets[field].text() == '' or self.widgets[field].text() is None:
+                    return False
+        return True
+
+
+class EmailConfigurationDialogue(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+        self.emailConfigurationWidget = EmailConfigurationWidget(self)
+        for widget in self.emailConfigurationWidget.widgets.values():
+
+            widget.textChanged.connect(self.checkValidity)
+        self.main_layout = QtWidgets.QVBoxLayout()
+        self.main_layout.addWidget(self.emailConfigurationWidget)
+        self.button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
+        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setText("Save")
+        self.button_box.button(QtWidgets.QDialogButtonBox.Cancel).setText("Cancel")
+
+
+        self.main_layout.addWidget(self.button_box)
+        self.setLayout(self.main_layout)
+
+    def getValues(self):
+        return self.emailConfigurationWidget.getValues()
+
+    def checkValidity(self):
+        self.button_box.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(self.emailConfigurationWidget.checkValidity())
+
+    def setValues(self, values):
+        self.emailConfigurationWidget.setValues(values)
+
 
 
 if __name__ == "__main__":
