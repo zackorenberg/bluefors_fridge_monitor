@@ -150,4 +150,8 @@ class MonitorsWidget(QtWidgets.QWidget):
         #self.updateGeometry()
         #for ch_type, box in self.collapsableBoxes.items():
         #    box.setMinimumWidth(box.layout().maximumSize().width() + box.content_area.verticalScrollBar().sizeHint().width())
-        pass
+        print("Change was called back")
+        for ch_type, box in self.collapsableBoxes.items():
+            print(ch_type,box.toggle_button.isChecked())
+            box.content_widget.layout().update()
+            #box.adjustMinimumWidth()

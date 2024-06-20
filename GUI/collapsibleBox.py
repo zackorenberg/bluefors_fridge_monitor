@@ -26,7 +26,7 @@ class CollapsibleBox(QtWidgets.QWidget):
             maximumHeight=0, minimumHeight=0
         )
         self.content_area.setSizePolicy(
-            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
         )
 
         self.content_area.setWidgetResizable(True)
@@ -50,6 +50,9 @@ class CollapsibleBox(QtWidgets.QWidget):
         self.toggle_animation.addAnimation(
             QtCore.QPropertyAnimation(self.content_area, b"maximumHeight")
         )
+        self.collapsed_width = (
+                self.sizeHint().width() - self.content_area.sizeHint().width()
+        )
 
     @QtCore.pyqtSlot()
     def on_pressed(self):
@@ -62,16 +65,36 @@ class CollapsibleBox(QtWidgets.QWidget):
             if not checked
             else QtCore.QAbstractAnimation.Backward
         )
+
         self.toggle_animation.start()
 
     def on_animation_complete(self):
+        self.adjustMinimumWidth()
         self.collapseChangeState.emit()
+
+    def adjustMinimumWidth(self):
+        if self.toggle_button.isChecked() and ALLOW_SMALLER_CONTENT_WIDTH:
+            #collapsed_width = (
+            #        self.sizeHint().width() - self.content_area.sizeHint().width()
+            #)
+            self.content_area.setMinimumWidth(self.collapsed_width)
+        elif not self.toggle_button.isChecked() and ALLOW_SMALLER_CONTENT_WIDTH:
+            #self.content_area.adjustSize()
+            content_width = self.content_widget.layout().minimumSize().width() + self.content_area.verticalScrollBar().sizeHint().width() + 2
+            #content_width = self.content_widget.layout().sizeHint().width() + self.content_area.verticalScrollBar().sizeHint().width() + 2
+            self.content_area.setMinimumWidth(content_width)
+            #if content_width < self.content_area.width():
+            #    self.content_area.resize(content_width, self.content_area.height())
 
     def setContentLayout(self, layout):
         lay = self.content_area.layout()
         del lay
         self.content_widget = QtWidgets.QWidget()
         self.content_widget.setLayout(layout)
+        #self.content_widget.setSizePolicy(
+        #    QtWidgets.QSizePolicy.Minimum,
+        #    QtWidgets.QSizePolicy.Minimum
+        #)
         self.content_area.setWidget(self.content_widget)
 
 
@@ -79,12 +102,22 @@ class CollapsibleBox(QtWidgets.QWidget):
         self.content_area.setWidgetResizable(True)
         self.content_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.content_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.content_area.setMinimumWidth(layout.minimumSize().width() + self.content_area.verticalScrollBar().sizeHint().width())
         collapsed_height = (
             self.sizeHint().height() - self.content_area.maximumHeight()
         )
+        collapsed_width = (
+                self.sizeHint().width() - self.content_area.sizeHint().width()
+        )
         content_height = min(MAX_COLLAPSEABLE_HEIGHT, layout.sizeHint().height() + self.content_area.horizontalScrollBar().sizeHint().height())
+        content_width = layout.minimumSize().width() + self.content_area.verticalScrollBar().sizeHint().width() + 2
+
         # Can make it scrollable by lowering the content height, but may be better to make parent scrollable instead
+        if ALLOW_SMALLER_CONTENT_WIDTH:
+            self.content_area.setMinimumWidth(collapsed_width)
+        else:
+            #self.content_area.setMinimumWidth(layout.minimumSize().width() + self.content_area.verticalScrollBar().sizeHint().width())
+            self.content_area.setMinimumWidth(content_width)
+
         #print(content_height)
         for i in range(self.toggle_animation.animationCount()):
             animation = self.toggle_animation.animationAt(i)

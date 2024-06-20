@@ -74,3 +74,4 @@ SPLIT_MONITOR_WIDGETS = True # This will make it so monitor selector is left, ac
 # If false, monitor will be top left, console will be bottom left, and active monitor will be entirely right
 
 CHANGE_PROCESS_CHECK = 1 # Number of seconds between checking for changes (We do this instead of immediate processing because many files sometimes get modified concurrently and we want as accurate a result as possible when a monitor goes off
+ALLOW_SMALLER_CONTENT_WIDTH = True
