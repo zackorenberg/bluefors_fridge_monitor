@@ -7,7 +7,8 @@ logging = logger.Logger(__file__)
 
 from Core.valueMonitors import *
 from GUI.monitorWidget import MonitorWidgetSelect
-from localvars import *
+import localvars
+localvars.load_globals(localvars, globals())
 
 # To format properly
 def getMonitorString(mtype, mvalues, mvariables):

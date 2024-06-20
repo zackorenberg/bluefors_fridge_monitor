@@ -1,7 +1,8 @@
 # This has all monitors in it
 from PyQt5 import QtCore, QtWidgets
 
-from localvars import *
+import localvars
+localvars.load_globals(localvars, globals())
 
 from GUI.collapsibleBox import CollapsibleBox
 from GUI.monitorWidget import MonitorWidget

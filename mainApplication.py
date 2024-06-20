@@ -1,10 +1,47 @@
 from PyQt5 import QtWidgets
-from Core.fileManager import *
 
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtWidgets import QAction # This changes in PyQt6 so import individually
 
-from localvars import *
+import localvars
+from Core.configurationManager import ConfigurationManager, does_config_file_exist, refresh_all_modules
+from itertools import zip_longest
+
+if not does_config_file_exist():
+    # No configuration file!!! Do something
+    from GUI.configurationWidgets import NewConfigurationDialogue
+    import sys
+
+    app = QtWidgets.QApplication(sys.argv)
+    ncd = NewConfigurationDialogue()
+    ncd.setWindowTitle("Configuration")
+    ncd.setWindowIcon(QtGui.QIcon(localvars.ICON_PATH))
+    while True:
+        if (ncd_code := ncd.exec()) == QtWidgets.QDialog.DialogCode.Accepted:
+            try:
+                values = ncd.getValues()
+            except ValueError as e:
+                QtWidgets.QMessageBox.warning(
+                    ncd,
+                    "Invalid values",
+                    f"The following error(s) occured:\n {str(e)}"
+                )
+                continue
+        elif ncd_code == QtWidgets.QDialog.DialogCode.Rejected:
+            sys.exit(0)
+        else:
+            continue
+        break # We got the values
+    del app # This was entirely standalone
+    config = ConfigurationManager()
+    config.set_config_value(**values)
+    config.write_config_file()
+
+config = ConfigurationManager()
+config.read_config_file()
+config.update_localvars()
+
+from Core.fileManager import *
 from Core.mailer import Mailer
 from Core.fileManager import FileManager
 from Core.monitorManager import MonitorManager
@@ -35,23 +72,22 @@ class MainApplication(QtWidgets.QMainWindow):
     monitorChange = QtCore.pyqtSignal(dict)
     widgetResize = QtCore.pyqtSignal()
     app = None # Where QApplication instance goes
-    def __init__(self, log_path=LOG_PATH):
+    def __init__(self, log_path=localvars.LOG_PATH):
         super().__init__()
         # Initialize the console widget and connect stdout to console to capture init prints
         self.consoleWidget = ConsoleWidget()
         stdout.printToConsole.connect(self.consoleWidget.printToConsole)
-
         self.fileManager = FileManager(log_path)
         self.monitorsWidget = MonitorsWidget()
         self.monitorManager = MonitorManager(self)
         self.activeMonitorWidget = ActiveMonitorsWidget()
 
 
-        self.mailer = Mailer(RECIPIENTS)
+        self.mailer = Mailer(localvars.RECIPIENTS)
         self.values = self.fileManager.dumpData()
 
 
-        if SEND_TEST_EMAIL_ON_LAUNCH:
+        if localvars.SEND_TEST_EMAIL_ON_LAUNCH:
             self.mailer.send_test(self.fileManager.currentStatus())
 
         self.monitorsWidget.init_ui(self.values)
@@ -73,9 +109,9 @@ class MainApplication(QtWidgets.QMainWindow):
 
 
         # Add icon
-        self.setWindowIcon(QtGui.QIcon('Resources/BlueforsIcon.ico'))
+        self.setWindowIcon(QtGui.QIcon(localvars.ICON_PATH))
         self.setWindowTitle("Bluefors Fridge Monitor")
-        if DEBUG_MODE:
+        if localvars.DEBUG_MODE:
             self.setWindowTitle("Bluefors Fridge Monitor (DEBUG)")
 
         # TODO: Add resizing event captures!
@@ -130,7 +166,7 @@ class MainApplication(QtWidgets.QMainWindow):
 
 
         # Add docks to main window
-        if SPLIT_MONITOR_WIDGETS:
+        if localvars.SPLIT_MONITOR_WIDGETS:
             # Monitor top left, Active monitor top right, Console bottom
             self.addDockWidget(QtCore.Qt.DockWidgetArea.TopDockWidgetArea, self.dock_monitorsWidget)
             self.addDockWidget(QtCore.Qt.DockWidgetArea.TopDockWidgetArea, self.dock_activeMonitorWidget)
@@ -147,12 +183,12 @@ class MainApplication(QtWidgets.QMainWindow):
             self.splitDockWidget(self.dock_monitorsWidget, self.dock_consoleWidget, QtCore.Qt.Orientation.Vertical)
 
         # deal with sizing:
-        if FIX_CONSOLE_HEIGHT:
+        if localvars.FIX_CONSOLE_HEIGHT:
             size = self.consoleWidget.sizeHint() # fix it? idr why I had this
             self.consoleWidget.consoleTextEdit.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
             self.consoleWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
             self.dock_consoleWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        if FIX_ACTIVE_WIDTH:
+        if localvars.FIX_ACTIVE_WIDTH:
             self.activeMonitorWidget.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Expanding)
 
 
@@ -236,11 +272,21 @@ class MainApplication(QtWidgets.QMainWindow):
             QtWidgets.QStyle.StandardPixmap.SP_DialogSaveButton
         ))
         save_monitors.triggered.connect(self.action_savemonitors)
+        quit_action = QAction(
+            "Quit",
+            self
+        )
+        quit_action.triggered.connect(self.action_quit)
         edit_configuration = QAction(
             "Edit configuration",
             self
         )
         edit_configuration.triggered.connect(self.action_editconfig)
+        edit_email_settings = QAction(
+            "Email Settings",
+            self
+        )
+        edit_email_settings.triggered.connect(self.action_editmailerconfig)
         send_test_email = QAction(
             "Send Test Email",
             self
@@ -253,7 +299,11 @@ class MainApplication(QtWidgets.QMainWindow):
         send_test_email.triggered.connect(self.action_sendtestemail)
         file_menu.addAction(save_monitors)
         file_menu.addAction(load_monitors)
+        file_menu.addSeparator()
+        file_menu.addAction(quit_action)
         edit_menu.addAction(edit_configuration)
+        edit_menu.addSeparator()
+        edit_menu.addAction(edit_email_settings)
         tools_menu.addAction(send_test_email)
         tools_menu.addSeparator()
         tools_menu.addAction(restart_app)
@@ -295,16 +345,126 @@ class MainApplication(QtWidgets.QMainWindow):
             print(f"Current monitors saved to {file_name}")
 
     def action_editconfig(self):
-        print("Currently unsupported, you must manually edit config file restart")
-        pass
+        from GUI.configurationWidgets import ConfigurationDialogue
+
+        cw = ConfigurationDialogue()
+        cw.setValues(
+            config.read_localvars()
+        )
+        cw.setWindowTitle("Edit Configuration")
+        cw.setWindowIcon(QtGui.QIcon(localvars.ICON_PATH))
+        changes = {}
+        while cw.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+            try:
+                values = cw.getValues()
+            except ValueError as e:
+                QtWidgets.QMessageBox.warning(
+                    ncd,
+                    "Invalid values",
+                    f"The following error(s) occured:\n {str(e)}"
+                )
+                continue
+
+            # Now get all the values
+            try:
+                changes = {}
+                for k,v in values.items():
+                    existing_value = getattr(localvars, k)
+                    if type(existing_value) != type(v):
+                        print(f"Error: {k} does not have the right type")
+                    if type(v) == list:
+                        is_same = all([a==b for a,b in zip_longest(sorted(existing_value),sorted(v),fillvalue=float('nan'))])
+                    else:
+                        is_same = (existing_value == v)
+                    if not is_same: # this is a new change
+                        changes[k] = v
+            except Exception as e:
+                QtWidgets.QMessageBox.warning(
+                    ncd,
+                    "Unknown error",
+                    f"The following error occured:\n {str(e)}"
+                )
+                continue
+            break
+        if len(changes.items()) > 0:
+            logging.info(f"Saving the following configuration changes: {', '.join([f'{k}={v}' for k,v in changes.items()])}")
+            config.set_config_value(**changes)
+            config.update_localvars()
+            config.write_config_file()
+            QtWidgets.QMessageBox.information(
+                self,
+                "Configuration Saved",
+                "Configuration changes have been saved. Restarting now",
+            )
+            self.action_restartapplication()
+
+    def action_editmailerconfig(self):
+        from GUI.configurationWidgets import EmailConfigurationDialogue
+
+        cw = EmailConfigurationDialogue()
+        cw.setValues(
+            config.read_localvars_fields(localvars.CONFIG_MAILER_FIELDS)
+        )
+        cw.setWindowTitle("Email Settings")
+        cw.setWindowIcon(QtGui.QIcon(localvars.ICON_PATH))
+        changes = {}
+        while cw.exec() == QtWidgets.QDialog.DialogCode.Accepted:
+            try:
+                values = cw.getValues()
+            except ValueError as e:
+                QtWidgets.QMessageBox.warning(
+                    ncd,
+                    "Invalid values",
+                    f"The following error(s) occured:\n {str(e)}"
+                )
+                continue
+
+            # Now get all the values
+            try:
+                changes = {}
+                for k,v in values.items():
+                    existing_value = getattr(localvars, k)
+                    if type(existing_value) != type(v):
+                        print(f"Error: {k} does not have the right type")
+                    if type(v) == list:
+                        is_same = all([a==b for a,b in zip_longest(sorted(existing_value),sorted(v),fillvalue=float('nan'))])
+                    else:
+                        is_same = (existing_value == v)
+                    if not is_same: # this is a new change
+                        changes[k] = v
+            except Exception as e:
+                QtWidgets.QMessageBox.warning(
+                    ncd,
+                    "Unknown error",
+                    f"The following error occured:\n {str(e)}"
+                )
+                continue
+            break
+        if len(changes.items()) > 0:
+            logging.info(f"Saving the following mailer changes: {', '.join([f'{k}={v}' for k,v in changes.items()])}")
+            config.set_config_value(**changes)
+            config.update_localvars()
+            config.write_config_file()
+            # Now we update the mailer
+            for k,v in changes.items():
+                if not hasattr(self.mailer, k.lower()):
+                    logging.error(f"Mailer does not have attribute {k.lower()}")
+                else:
+                    setattr(self.mailer, k.lower(), v)
+            send_test_email = QtWidgets.QMessageBox.question(
+                self,
+                "Email Settings Saved",
+                "Email settings have been saved. Would you like to send a test email?",
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+            )
+            if send_test_email == QtWidgets.QMessageBox.StandardButton.Yes:
+                self.action_sendtestemail()
 
     def action_sendtestemail(self):
         self.mailer.send_test(self.fileManager.currentStatus())
-        logging.info("Test message sent!")
+        logging.info(f"Test message sent to {', '.join(self.mailer.recipients)}")
         print("Test email sent!")
 
-    def action_reloadapplication(self):
-        pass
 
     def action_restartapplication(self):
         if self.app:
@@ -314,13 +474,39 @@ class MainApplication(QtWidgets.QMainWindow):
             self.close()
             QtWidgets.QApplication.exit(RESTART_EXIT_CODE)
 
+    def closeEvent(self, a0: QtGui.QCloseEvent = None) -> None:
+        reply = QtWidgets.QMessageBox.question(self, 'Quit',
+                                           "Are you sure you want to quit?", QtWidgets.QMessageBox.Yes,
+                                           QtWidgets.QMessageBox.No)
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            a0.accept()
+
+    def quit(self, exit_code=0):
+        if self.app:
+            self.close()
+            self.app.exit(exit_code)
+        else:
+            self.close()
+            QtWidgets.QApplication.exit(exit_code)
+
+    def action_quit(self):
+        reply = QtWidgets.QMessageBox.question(self, 'Quit',
+                                               "Are you sure you want to quit?", QtWidgets.QMessageBox.Yes,
+                                               QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.closeEvent = super().closeEvent
+            self.quit()
+
+
+
 
 if __name__ == "__main__":
     exitcode = RESTART_EXIT_CODE
     app = QtWidgets.QApplication(sys.argv)
     MainApplication.app = app
     while exitcode == RESTART_EXIT_CODE:
-        w = MainApplication()
+        w = MainApplication(log_path=localvars.LOG_PATH)
         #w.app = app
         w.init_ui()
         w.init_threads()
@@ -329,4 +515,8 @@ if __name__ == "__main__":
         exitcode = w.app.exec()
         w.export_monitors(fname='history.monitor')
         w.close_threads()
+        if exitcode == RESTART_EXIT_CODE:
+            refresh_all_modules()
+            config.read_config_file()
+            config.update_localvars()
     sys.exit(exitcode)
