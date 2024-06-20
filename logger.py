@@ -55,6 +55,9 @@ class Logger:
         self.logger.addHandler(self.handler_stderr)
         self.logger.addHandler(self.handler_stdout)
 
+        # To make sure that all handlers handle
+        self.logger.setLevel(loglib.DEBUG)
+
     def __getattr__(self, item):
         try:
             return getattr(self.logger, item)

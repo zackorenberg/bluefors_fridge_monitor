@@ -112,7 +112,7 @@ class ActiveMonitorEdit(QtWidgets.QDialog):
 
         self.form_layout = QtWidgets.QFormLayout()
         self.active_checkbox = QtWidgets.QCheckBox()
-        self.active_checkbox.setCheckState(self.monitor['active'])
+        self.active_checkbox.setChecked(self.monitor['active'])
         self.monitor_combobox = QtWidgets.QComboBox(self)
 
         self.monitor_combobox.addItem('Select Monitor Type')

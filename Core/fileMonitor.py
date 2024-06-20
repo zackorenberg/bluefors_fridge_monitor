@@ -45,13 +45,15 @@ class Overseer(QThread):
 
         self.observer = Observer()
         self.schedule = None
+        self._isRunning = False
 
     def run(self):
+        self._isRunning = True
         if os.path.exists(os.path.join(self.log_path, self.date)):
             self.schedule = self.observer.schedule(self.logFileWatchdog, os.path.join(self.log_path, self.date), recursive=False)
             logging.debug(f"Schedule: {str(self.schedule)}")
         self.observer.start()
-        while True:
+        while self._isRunning:
             current_date = datetime.now().strftime(DATE_FORMAT)
             if current_date != self.date or self.schedule is None:
                 if not os.path.exists(os.path.join(self.log_path, current_date)):
@@ -66,6 +68,7 @@ class Overseer(QThread):
             time.sleep(1)
 
     def stop(self):
+        self._isRunning = False
         self.observer.stop()
         self.observer.join()
 

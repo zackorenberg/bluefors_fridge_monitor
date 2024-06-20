@@ -2,6 +2,7 @@ from PyQt5 import QtWidgets
 from Core.fileManager import *
 
 from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5.QtWidgets import QAction # This changes in PyQt6 so import individually
 
 from localvars import *
 from Core.mailer import Mailer
@@ -22,6 +23,8 @@ if sys.platform == 'win32':
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('bluefors.monitor.app.1')
 import logger
 
+RESTART_EXIT_CODE = 12 # Should not be used
+
 logging = logger.Logger(__file__)
 
 import traceback
@@ -31,6 +34,7 @@ class MainApplication(QtWidgets.QMainWindow):
     monitorSignal = QtCore.pyqtSignal(dict)
     monitorChange = QtCore.pyqtSignal(dict)
     widgetResize = QtCore.pyqtSignal()
+    app = None # Where QApplication instance goes
     def __init__(self, log_path=LOG_PATH):
         super().__init__()
         # Initialize the console widget and connect stdout to console to capture init prints
@@ -81,9 +85,11 @@ class MainApplication(QtWidgets.QMainWindow):
 
         self.widgetResize.connect(self.resizeWidgets)
 
+        self.init_menubar()
 
 
-    def load_history(self, fname='history.monitor'):
+
+    def load_monitors(self, fname='history.monitor'):
         if os.path.exists(fname):
             with open(fname, 'r') as f:
                 try:
@@ -92,7 +98,7 @@ class MainApplication(QtWidgets.QMainWindow):
                 except Exception as e:
                     logging.warning(f"Cannot load monitor history: {str(e)}")
 
-    def export_history(self, fname='history.monitor'):
+    def export_monitors(self, fname='history.monitor'):
         with open(fname, 'w') as f:
             monitorHistory = self.activeMonitorWidget.exportMonitors()
             if len(monitorHistory.keys()) > 0:
@@ -154,19 +160,26 @@ class MainApplication(QtWidgets.QMainWindow):
     def init_threads(self):
         self.fileManager.start()
 
-    def checkMonitors(self, obj):
-        vals = self.monitorManager.checkMonitors(obj)
-        triggered = (self.monitorManager.WhatMonitorsTriggered(vals))
-        triggered_data = self.monitorManager.triggeredMonitorInfo(obj, triggered)
-        if len(vals.items()) and len(triggered):
-            logging.info(f"Alerts triggered: {', '.join([':'.join(x) if type(x) != str else x for x in triggered])}")
-        # if len(vals.items()):
-        #    print(vals)
-        if len(triggered) > 0:
-            print(f"Alerts triggered: {', '.join([':'.join(x) if type(x) != str else x for x in triggered])}")
-            # print(triggered_data)
-            self.mailer.send_alert(triggered_data, self.fileManager.currentStatus())
+    def close_threads(self):
+        self.fileManager.stop()
+        self.fileManager.wait()
 
+    def checkMonitors(self, obj):
+        try:
+            vals = self.monitorManager.checkMonitors(obj)
+            triggered = (self.monitorManager.WhatMonitorsTriggered(vals))
+            triggered_data = self.monitorManager.triggeredMonitorInfo(obj, triggered)
+            if len(vals.items()) and len(triggered):
+                logging.info(f"Alerts triggered: {', '.join([':'.join(x) if type(x) != str else x for x in triggered])}")
+            # if len(vals.items()):
+            #    print(vals)
+            if len(triggered) > 0:
+                print(f"Alerts triggered: {', '.join([':'.join(x) if type(x) != str else x for x in triggered])}")
+                # print(triggered_data)
+                self.mailer.send_alert(triggered_data, self.fileManager.currentStatus())
+        except Exception as e:
+            logging.error(f"An error occured while checking monitors: {str(e)}")
+            print(f"{str(e)}:{traceback.format_exc()}")
         # print(self.fileManager.mostRecentChanges())
         # print(self.fileManager.currentStatus())
 
@@ -197,14 +210,123 @@ class MainApplication(QtWidgets.QMainWindow):
         super().resizeEvent(a0)
         #self.monitorsWidget.adjustSize()
 
+    ### Add menubars with actions ###
+    def init_menubar(self):
+        menubar = self.menuBar()
+
+        file_menu = menubar.addMenu('File')
+        edit_menu = menubar.addMenu('Edit')
+        tools_menu = menubar.addMenu('Tools')
+
+        load_monitors = QAction(
+            "Load monitors",
+            self
+        )
+        load_monitors.setIcon(self.style().standardIcon(
+            #QtWidgets.QStyle.StandardPixmap.SP_DialogOpenButton
+            QtWidgets.QStyle.StandardPixmap.SP_DirOpenIcon
+        ))
+        load_monitors.triggered.connect(self.action_loadmonitors)
+        save_monitors = QAction(
+            "Save monitors",
+            self
+        )
+        save_monitors.setIcon(self.style().standardIcon(
+            #QtWidgets.QStyle.StandardPixmap.SP_DialogSaveButton
+            QtWidgets.QStyle.StandardPixmap.SP_DialogSaveButton
+        ))
+        save_monitors.triggered.connect(self.action_savemonitors)
+        edit_configuration = QAction(
+            "Edit configuration",
+            self
+        )
+        edit_configuration.triggered.connect(self.action_editconfig)
+        send_test_email = QAction(
+            "Send Test Email",
+            self
+        )
+        restart_app = QAction(
+            "Restart Application",
+            self
+        )
+        restart_app.triggered.connect(self.action_restartapplication)
+        send_test_email.triggered.connect(self.action_sendtestemail)
+        file_menu.addAction(save_monitors)
+        file_menu.addAction(load_monitors)
+        edit_menu.addAction(edit_configuration)
+        tools_menu.addAction(send_test_email)
+        tools_menu.addSeparator()
+        tools_menu.addAction(restart_app)
+
+    def action_loadmonitors(self):
+        options = QtWidgets.QFileDialog.Options()
+        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            "Select Monitor File",
+            "",
+            "Monitor Files (*.monitor);;All Files (*)",
+            options=options
+        )
+
+        try:
+            self.load_monitors(fname = file_name)
+        except Exception as e:
+            logging.error(f"Could not load monitor file {file_name}: {str(e)}")
+        else:
+            logging.info(f"Monitors loaded from {file_name}")
+            print(f"Monitors loaded from {file_name}")
+
+    def action_savemonitors(self):
+        options = QtWidgets.QFileDialog.Options()
+        file_name, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self,
+            "Save Monitor",
+            "",
+            "Monitor Files (*.monitor);;All Files (*)",
+            options=options
+        )
+
+        try:
+            self.export_monitors(fname=file_name)
+        except Exception as e:
+            logging.error(f"Could not save monitor file {file_name}: {str(e)}")
+        else:
+            logging.info(f"Current monitors saved to {file_name}")
+            print(f"Current monitors saved to {file_name}")
+
+    def action_editconfig(self):
+        print("Currently unsupported, you must manually edit config file restart")
+        pass
+
+    def action_sendtestemail(self):
+        self.mailer.send_test(self.fileManager.currentStatus())
+        logging.info("Test message sent!")
+        print("Test email sent!")
+
+    def action_reloadapplication(self):
+        pass
+
+    def action_restartapplication(self):
+        if self.app:
+            self.close()
+            self.app.exit(RESTART_EXIT_CODE)
+        else:
+            self.close()
+            QtWidgets.QApplication.exit(RESTART_EXIT_CODE)
+
 
 if __name__ == "__main__":
+    exitcode = RESTART_EXIT_CODE
     app = QtWidgets.QApplication(sys.argv)
-    w = MainApplication()
-    w.init_ui()
-    w.init_threads()
-    w.load_history()
-    w.show()
-    exitcode = app.exec()
-    w.export_history()
+    MainApplication.app = app
+    while exitcode == RESTART_EXIT_CODE:
+        w = MainApplication()
+        #w.app = app
+        w.init_ui()
+        w.init_threads()
+        w.load_monitors(fname='history.monitor')
+        w.show()
+        exitcode = w.app.exec()
+        w.export_monitors(fname='history.monitor')
+        w.close_threads()
     sys.exit(exitcode)

@@ -56,7 +56,8 @@ class LogChannel:
             self.data = self.data[-MAXIMUM_DATAPOINT_HISTORY:]
 
         last_time, last_data = get_last_entry(data, labels)
-
+        if last_time is None or last_data is None: # This might prevent the None,None error
+            return None, None
         self.last_time = last_time
         self.last_data = last_data
         return self.last_time, self.last_data
@@ -92,15 +93,18 @@ class FileManager(QThread):
         self.most_recent_changes = {}
 
         self.changes_read = {}
+        self._isRunning = False
 
     def emitData(self):
         self.allData.emit(self.dumpData())
 
     def dumpData(self):
         return {ch:lc.data for ch,lc in self.logChannels.items()}
+
     def run(self):
+        self._isRunning = True
         self.overseer.start()
-        while True:
+        while self._isRunning:
             logging.debug("Looping")
             if len(self.changes_read.keys()) > 0:
                 logging.debug("Pending changes emitting")
@@ -111,8 +115,9 @@ class FileManager(QThread):
             time.sleep(CHANGE_PROCESS_CHECK)
 
     def stop(self):
+        self._isRunning = False
         self.overseer.stop()
-        self.overseer.join()
+        self.overseer.wait()
 
     def __del__(self):
         for channel, logChannel in self.logChannels.items():
