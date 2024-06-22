@@ -1,5 +1,6 @@
 import os
-from localvars import *
+import localvars
+localvars.load_globals(localvars, globals())
 from datetime import datetime
 
 def load_calibration_dates(log_path = LOG_PATH, omit_empty_directories=True):

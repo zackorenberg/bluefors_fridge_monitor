@@ -1,2 +1,2 @@
-python BlueforsMonitor.py
+python mainApplication.py
 pause
