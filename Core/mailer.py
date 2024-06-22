@@ -48,7 +48,7 @@ def _send_email(subject, body, sender, recipients, password, smtp_server, smtp_p
 class Mailer:
     def __init__(self, recipients, email=localvars.SENDER, password=localvars.PASSWORD, smtp_server=localvars.SMTP_SERVER, smtp_port=localvars.SMTP_PORT):
         self.recipients = recipients
-        self.email = email
+        self.sender = email
         self.password = password
         self.smtp_server = smtp_server
         self.smtp_port = smtp_port
@@ -133,7 +133,7 @@ class Mailer:
             _send_email(
                 subject=subject,
                 body=text,
-                sender=self.email,
+                sender=self.sender,
                 recipients=self.recipients,
                 password=self.password,
                 smtp_server=self.smtp_server,
