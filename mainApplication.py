@@ -467,6 +467,7 @@ class MainApplication(QtWidgets.QMainWindow):
 
 
     def action_restartapplication(self):
+        self.closeEvent = super().closeEvent # Prevent asking if you want to quit
         if self.app:
             self.close()
             self.app.exit(RESTART_EXIT_CODE)
