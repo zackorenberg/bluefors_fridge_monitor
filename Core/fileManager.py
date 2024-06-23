@@ -32,21 +32,23 @@ class LogChannel:
         else:
             self.fname = f'{self.channel} {self.date}.log'
 
-
+        self.close()  # Close since we will be tracking a new file
         return self.fname
 
     def open(self, date = None):
         if date:
             self.date = date
         self.close()
-        self.date = self.date
         self.update_path_information(self.date)
         self.fd = open(os.path.join(self.log_path, self.date, self.fname), 'r')
 
 
     def update(self):
-        if not self.fd:
-            return None, None
+        if not self.fd: # Could potentially add a keep_files_open clause here
+            try:
+                self.open()
+            except:
+                return None, None
         flines = [l.strip(' \t\r\n').split(',') for l in self.fd.readlines()]# if l[-1] == '\n']
 
         if len(flines) == 0:
@@ -133,8 +135,8 @@ class FileManager(QThread):
             logging.error(f"Channel {channel} not found in log channels")
             return
         if self.logChannels[channel].date != date:
-            #self.logChannels[channel].update_path_information(date)
-            self.logChannels[channel].open(date) # We need to actually open the new file to read it
+            self.logChannels[channel].update_path_information(date)  # should now work as expected
+            #self.logChannels[channel].open(date) # We need to actually open the new file to read it
         if not self.logChannels[channel].fd:
             self.logChannels[channel].open()
         time, data = self.logChannels[channel].update()
