@@ -87,7 +87,7 @@ class _EmailForm(QtWidgets.QWidget):
         # Do it in function instead self.email_input.returnPressed.connect(self.add_email)
 
     def add_email(self, email=None):
-        if email is None:
+        if not email:
             email = self.email_input.text()
         if email:
             if '@' in email and '.' in email:  # Simple email validation
