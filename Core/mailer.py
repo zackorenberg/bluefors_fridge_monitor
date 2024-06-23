@@ -12,8 +12,7 @@ localvars.load_globals(localvars, globals())
 from tabulate import tabulate
 
 def _write_alert_email(triggered_monitors_str, data_dump_str):
-    return f"""
-The following monitors triggered this alert:
+    return f"""The following monitors triggered this alert:
 {triggered_monitors_str}
 
 Fridge log dump:
@@ -24,8 +23,7 @@ BlueFors Fridge
 """
 
 def _write_test_email(data_dump_str):
-    return f"""
-Do not panic, this test email was manually triggered to test the Bluefors Monitor System
+    return f"""Do not panic, this test email was manually triggered to test the Bluefors Monitor System
 
 Fridge log dump:
 {data_dump_str}
