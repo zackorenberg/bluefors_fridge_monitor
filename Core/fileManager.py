@@ -133,7 +133,8 @@ class FileManager(QThread):
             logging.error(f"Channel {channel} not found in log channels")
             return
         if self.logChannels[channel].date != date:
-            self.logChannels[channel].update_path_information(date)
+            #self.logChannels[channel].update_path_information(date)
+            self.logChannels[channel].open(date) # We need to actually open the new file to read it
         if not self.logChannels[channel].fd:
             self.logChannels[channel].open()
         time, data = self.logChannels[channel].update()
